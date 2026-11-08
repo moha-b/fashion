@@ -6,7 +6,11 @@
       "mcp__plugin_fashion_inspo",
       "mcp__plugin_fashion_awwwards",
       "mcp__plugin_fashion_dembrandt",
-      "mcp__plugin_fashion_responsively"
+      "mcp__plugin_fashion_responsively",
+      "mcp__inspo",
+      "mcp__awwwards",
+      "mcp__dembrandt",
+      "mcp__responsively"
     ]
   }
 }

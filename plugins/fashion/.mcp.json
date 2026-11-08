@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "inspo": {
+      "type": "http",
+      "url": "https://inspomcp.dev/api/mcp"
+    },
+    "awwwards": {
+      "command": "npx",
+      "args": ["-y", "awwwards-mcp@1.18.0"]
+    },
+    "dembrandt": {
+      "command": "npx",
+      "args": ["-y", "dembrandt@0.39.2", "mcp"]
+    },
+    "responsively": {
+      "command": "npx",
+      "args": ["-y", "@responsively/mcp@1.0.0"]
+    }
+  }
+}

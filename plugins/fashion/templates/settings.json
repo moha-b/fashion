@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch",
+      "mcp__plugin_fashion_inspo",
+      "mcp__plugin_fashion_awwwards",
+      "mcp__plugin_fashion_dembrandt",
+      "mcp__plugin_fashion_responsively"
+    ]
+  }
+}

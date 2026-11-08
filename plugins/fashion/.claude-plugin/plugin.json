@@ -1,0 +1,11 @@
+{
+  "name": "fashion",
+  "displayName": "Fashion",
+  "version": "0.1.0",
+  "description": "Phased UI-design agent: interview, research, direction, then build for web, Flutter or SwiftUI.",
+  "author": { "name": "moha-b" },
+  "homepage": "https://github.com/moha-b/fashion",
+  "repository": "https://github.com/moha-b/fashion",
+  "license": "MIT",
+  "keywords": ["design", "ui", "research", "nextjs", "flutter", "swiftui"]
+}

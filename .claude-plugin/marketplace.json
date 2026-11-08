@@ -1,0 +1,12 @@
+{
+  "name": "fashion",
+  "description": "A phased UI-design agent: interview, research, direction, build.",
+  "owner": { "name": "moha-b" },
+  "plugins": [
+    {
+      "name": "fashion",
+      "source": "./plugins/fashion",
+      "description": "Phased UI-design agent: interview, research, direction, then build for web, Flutter or SwiftUI."
+    }
+  ]
+}

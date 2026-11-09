@@ -7,13 +7,16 @@ description: Turns a Fashion project's design decisions into build tickets. Writ
 Split the build into tickets a worker can finish alone, in its own context.
 
 ## Read first
-`.fashion/brief.md`, `.fashion/state.json`, `ux/decisions.md`, `ux/components.md` (if present), `references/*/notes.md`, and `tickets/board.md` if tickets already exist. Never overwrite an existing ticket; add new ones and append to the board.
+`.fashion/brief.md`, `.fashion/state.json`, `ux/decisions.md`, `ux/components.md` (written and confirmed in phase 4.2; stop and ask the router for it if missing), `references/*/notes.md`, and `tickets/board.md` if tickets already exist. Never overwrite an existing ticket; add new ones and append to the board.
 
 ## Split
 1. One ticket per screen, page section or feature named in `ux/decisions.md`. A ticket should take one worker well under an hour. Split anything bigger.
 2. Add foundation tickets first, and make the others depend on them:
    - `T00-scaffold`: create the app for the platform in the brief (see the platform notes in the `fashion:fashion` skill). Mode `solo`.
-   - `T01-tokens`: colour, type, spacing, radius, shadow and motion tokens in one place, from `ux/design-systems.md` and the decisions. Blocked by `T00-scaffold`.
+   - `T01-tokens`: colour, type, spacing, radius, shadow and motion tokens in one place, from the Tokens part of `ux/components.md`. Blocked by `T00-scaffold`.
+   - `T02-primitives`: the primitives in `ux/components.md`, each with its variants as props. Blocked by `T01-tokens`. Split it if the list is long.
+   - Extraction tickets: for each shared primitive that `ux/components.md` plans to extract from existing code, a ticket that creates it and moves the existing component onto it, with no visible change. The new component's ticket is blocked by it.
+   Section and page tickets are blocked by the primitives they use. Skip a foundation ticket when the existing codebase already covers it.
 3. Ids are `T<two digits>-<short-slug>`, in build order. Bug tickets from the checker are `bug-<n>`.
 4. `blocked-by` lists only real dependencies (files or components the ticket needs). Keep the graph shallow so tickets can run in parallel. No cycles.
 5. Mode: `solo` (one worker subagent) by default. Use `team` (a builder and a checker working together through agent teams, falling back to `solo` when teams are not available) only for tickets with heavy interaction or motion that need a tight build-check loop.
@@ -30,7 +33,7 @@ Split the build into tickets a worker can finish alone, in its own context.
 - References: <slugs from references/, and what to take from each>
 - Components: <components it creates or reuses>
 ## Out of scope
-- <what a neighbouring ticket covers>
+- <what a neighbouring ticket covers. Never put an extraction the component rules require out of scope; it goes in this ticket or a ticket that blocks it.>
 ## Blocked by
 - <ids, or "none">
 ```
@@ -38,11 +41,13 @@ Split the build into tickets a worker can finish alone, in its own context.
 ## tickets/<id>/eval.md
 A numbered list. Each item is one check with a clear pass condition that the checker can run without asking. Include, as they apply:
 1. Build passes: `npm run build` (web), `flutter analyze` (Flutter) or an Xcode build (SwiftUI). Lint passes where configured.
-2. Browser or simulator steps: for web, `responsively` at phone, tablet and desktop, one device at a time: the URL, what to click or type, and what must be visible. Use URLs that exist in the app (check its routes) so the checker never has to reinterpret an item. For mobile, the simulator screen and gesture.
+2. Browser or simulator steps: for web, `responsively` at phone, tablet and desktop, one device at a time: the URL, what to click or type, and what must be visible. Use URLs that exist in the app (check its routes) so the checker never has to reinterpret an item. Responsively can navigate, click, type (with Enter), read the page and take screenshots; it cannot press other keys. For behaviour that needs Escape, Tab or arrow keys, write the item as a check the checker can run without a browser: a test in the project's own test runner if it has one, otherwise a code check naming the handler ("`onKeyDown` closes on `Escape`") and marked `code check`. For mobile, the simulator screen and gesture.
 3. Each "Must do" line from `rd.md` as its own check.
 4. Contrast: dembrandt `check_contrast` on the text and background pairs this ticket introduces. Pass at WCAG AA.
 5. Skill checkers: the checker of each design skill the ticket uses (for example scrollcraft `verify.mjs`).
-6. No raw colour or spacing values in components when `T01-tokens` exists.
+6. No raw colour or spacing values outside the token file. Grep the files the ticket adds or changes for hex colours, `rgb(`/`hsl(`, raw `px`/`pt`/`rem` values, and Tailwind arbitrary values such as `w-[420px]` or `text-[13px]` (pattern `-\[[0-9.]+(px|rem|pt)\]`). Each hit is a fail unless it is in the token file.
+7. No duplicated components: each component the ticket adds is in `ux/components.md`, and no two files implement the same markup or styling (for example two drawers with their own backdrop and panel shell).
+8. clean-code-guard pass recorded in `result.md`, with findings fixed or justified (or "skipped: not installed" plus the component rules applied by hand).
 
 ## tickets/board.md
 ```

@@ -13,7 +13,7 @@ Bundled with this plugin (copied from `${CLAUDE_PLUGIN_ROOT}/vendor/skills/`):
 - `bang-motion` (MIT)
 
 Fetched from their public upstream at a pinned commit (list in `${CLAUDE_PLUGIN_ROOT}/vendor/skills/upstream.json`, fetched with `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-skill.sh`):
-- `design-taste-frontend`, `hallmark`, `app-store-screenshots`, `brag-slim` (all MIT)
+- `design-taste-frontend`, `hallmark`, `app-store-screenshots`, `brag-slim`, `clean-code-guard` (all MIT)
 
 For each skill, check the state:
 - Missing in `~/.agents/skills/<name>`: will install.

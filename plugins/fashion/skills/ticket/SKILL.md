@@ -15,6 +15,7 @@ Split the build into tickets a worker can finish alone, in its own context.
    - `T00-scaffold`: create the app for the platform in the brief (see the platform notes in the `fashion:fashion` skill). Mode `solo`.
    - `T01-tokens`: colour, type, spacing, radius, shadow and motion tokens in one place, from the Tokens part of `ux/components.md`. Blocked by `T00-scaffold`.
    - `T02-primitives`: the primitives in `ux/components.md`, each with its variants as props. Blocked by `T01-tokens`. Split it if the list is long.
+   - Extraction tickets: for each shared primitive that `ux/components.md` plans to extract from existing code, a ticket that creates it and moves the existing component onto it, with no visible change. The new component's ticket is blocked by it.
    Section and page tickets are blocked by the primitives they use. Skip a foundation ticket when the existing codebase already covers it.
 3. Ids are `T<two digits>-<short-slug>`, in build order. Bug tickets from the checker are `bug-<n>`.
 4. `blocked-by` lists only real dependencies (files or components the ticket needs). Keep the graph shallow so tickets can run in parallel. No cycles.
@@ -32,7 +33,7 @@ Split the build into tickets a worker can finish alone, in its own context.
 - References: <slugs from references/, and what to take from each>
 - Components: <components it creates or reuses>
 ## Out of scope
-- <what a neighbouring ticket covers>
+- <what a neighbouring ticket covers. Never put an extraction the component rules require out of scope; it goes in this ticket or a ticket that blocks it.>
 ## Blocked by
 - <ids, or "none">
 ```
@@ -44,8 +45,8 @@ A numbered list. Each item is one check with a clear pass condition that the che
 3. Each "Must do" line from `rd.md` as its own check.
 4. Contrast: dembrandt `check_contrast` on the text and background pairs this ticket introduces. Pass at WCAG AA.
 5. Skill checkers: the checker of each design skill the ticket uses (for example scrollcraft `verify.mjs`).
-6. No raw colour or spacing values outside the token file (grep the ticket's files for hex colours, `rgb(`, and raw pixel or point values).
-7. No duplicated components: each component the ticket adds is in `ux/components.md`, and no two files implement the same thing.
+6. No raw colour or spacing values outside the token file. Grep the files the ticket adds or changes for hex colours, `rgb(`/`hsl(`, raw `px`/`pt`/`rem` values, and Tailwind arbitrary values such as `w-[420px]` or `text-[13px]` (pattern `-\[[0-9.]+(px|rem|pt)\]`). Each hit is a fail unless it is in the token file.
+7. No duplicated components: each component the ticket adds is in `ux/components.md`, and no two files implement the same markup or styling (for example two drawers with their own backdrop and panel shell).
 8. clean-code-guard pass recorded in `result.md`, with findings fixed or justified (or "skipped: not installed" plus the component rules applied by hand).
 
 ## tickets/board.md

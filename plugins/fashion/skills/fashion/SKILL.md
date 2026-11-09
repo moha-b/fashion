@@ -102,7 +102,7 @@ Before any ticket, write `ux/components.md` from `ux/decisions.md`, `ux/design-s
 ## Motion and 3D
 - <Reveal, ScrollScene, Model or similar wrappers, with their props>
 ```
-Show it and get a yes. Tickets and workers follow it. Anything new is added to it first (by you, before the ticket that needs it). If the product already has a codebase with its own component library, list what exists and mark the list "existing conventions win".
+Check every new component against what exists. If it would repeat the markup or styling of an existing one (a second drawer, a second card, a second modal), that is the second use: add the shared primitive (for example `Drawer`) to the list, and plan its extraction, with the existing component moved onto it, before the new component. Show it and get a yes. Tickets and workers follow it. Anything new is added to it first (by you, before the ticket that needs it). If the product already has a codebase with its own component library, list what exists and mark the list "existing conventions win".
 
 ### 4.3 Tickets
 Run the `fashion:ticket` skill. It writes `tickets/<id>/rd.md`, `tickets/<id>/eval.md` and `tickets/board.md`, all as `draft`. Each ticket names the components it creates or reuses from `ux/components.md`. Show the board. Tell the user to mark the tickets they want built as `ready` (they can say "all ready" and you update the board). Only `ready` tickets are assigned.

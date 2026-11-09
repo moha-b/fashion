@@ -14,8 +14,18 @@ Run the decision regression suite with an authenticated Claude CLI:
 node tests/recovery-prompts.mjs --run /tmp/fashion-recovery-report.json
 ```
 
+Repeat runs when changing prompts or fixtures: model output is nondeterministic. Keep every report and report all failures, rather than retrying until one run passes. For three independent runs:
+
+```sh
+failed=0
+for run in 1 2 3; do
+  node tests/recovery-prompts.mjs --run "/tmp/fashion-recovery-${run}.json" || failed=1
+done
+test "$failed" -eq 0
+```
+
 The runner sends only the listed plugin prompts and synthetic fixture inputs to Claude. Expected answers stay local. It uses Sonnet, disables tools and customizations, runs in an empty temporary directory, caps spend at $1 and runtime at 180 seconds, and saves the raw JSON response (including model usage, cost and duration) to the requested report path. A missing response, CLI error, omitted/duplicate case or wrong decision fails the run. Requires CLI support for `--safe-mode` and structured output.
 
-Coverage includes completed work waiting in queues, completed but uncollected results/checks, stale heartbeats and attempts, hung mergers/checkers, a landed merge with its branch deleted, terminated-worker replacement, repeated resume with an active replacement, invalid legacy stages/extra fields, inherited versus explicit browser restrictions, final-review revision ownership, and missing project-local Playwright.
+Each fixture declares `role: watchdog` or `role: router`. The model classifies watchdog flags only for watchdog cases; router cases always use `none`. This removes role guessing without relaxing any decision assertions. Coverage includes completed work waiting in queues, completed but uncollected results/checks, stale heartbeats and attempts, hung mergers/checkers, a landed merge with its branch deleted, terminated-worker replacement, repeated resume with an active replacement, invalid legacy stages/extra fields, inherited versus explicit browser restrictions, final-review revision ownership, missing project-local Playwright, and a required readiness probe before a resumed browser check.
 
 Fixtures describe filesystem, task and Git snapshots. This suite tests prompt decisions, not actual file writes, Git operations, task termination or browser execution. It does not establish deterministic schema enforcement, crash safety or improved design quality. Those still need live integration runs and repeated comparisons on the same briefs/assets, with preference/task outcomes, revisions, time, cost and model versions recorded.

@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 
 const fixtures = JSON.parse(readFileSync(new URL('./recovery-fixtures.json', import.meta.url), 'utf8'));
 const actions = ['wait', 'collect-result', 'collect-check', 'inspect-task', 'launch-builder',
-  'launch-checker', 'launch-reproducer', 'migrate-state', 'ask-user', 'report-missing-dependency'];
+  'launch-checker', 'launch-reproducer', 'migrate-state', 'ask-user', 'report-missing-dependency', 'probe-browser'];
 const stateKeys = ['stage', 'attempt', 'taskId', 'branch', 'worktree', 'builtCommit',
   'mergeCommit', 'checkedCommit', 'stageStartedAt', 'updatedAt'];
 const instructions = ['skills/fashion/SKILL.md', 'commands/resume.md', 'commands/setup.md',
@@ -30,7 +30,10 @@ const schema = {
 };
 const prompt = `Apply the shipped Fashion instructions to each independent fixture below.
 This is a decision-only regression test: do not execute tools, spawn agents, or edit files.
-For watchdog fixtures classify the flag; for other fixtures use flag "none".
+Each fixture has an explicit role. If role is "watchdog", classify the watchdog flag
+("ok" if no flag is warranted) and recommend the router's next action.
+If role is "router", use flag "none", even when its context mentions a prior watchdog flag.
+Never infer or change the fixture role from its context.
 Choose the next immediate action and resulting stage/implementation attempt.
 For collect-check, keep stage checking until the router compares evidence.
 For migrate-state, return all and only allowed state keys in stateFields; otherwise use [].
@@ -38,7 +41,11 @@ Briefly explain each decision. Do not invent missing task inspection or user per
 ${JSON.stringify(fixtures.map(({ expected, ...input }) => input))}`;
 
 assert.equal(new Set(fixtures.map(fixture => fixture.id)).size, fixtures.length);
-for (const fixture of fixtures) assert.ok(actions.includes(fixture.expected.action));
+for (const fixture of fixtures) {
+  assert.ok(['watchdog', 'router'].includes(fixture.role), `Missing/invalid role: ${fixture.id}`);
+  assert.ok(actions.includes(fixture.expected.action));
+  assert.equal(fixture.expected.flag === 'none', fixture.role === 'router', `Role/flag mismatch: ${fixture.id}`);
+}
 
 if (process.argv[2] === '--check') {
   console.log(`${fixtures.length} fixture definitions valid; no model behavior tested.`);

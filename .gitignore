@@ -1,0 +1,3 @@
+# Local development settings; reusable defaults live in plugins/fashion/templates/.
+/.claude/launch.json
+/.claude/settings.json

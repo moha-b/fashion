@@ -46,6 +46,10 @@ Every phase ends with your explicit yes.
 - `/fashion:start` writes only in the current folder: `.fashion/`, `research/`, `ux/`, `references/` and `.claude/settings.json` (pre-allows WebSearch, WebFetch and this plugin's MCP tools). It never runs `git init`; the router offers that once, before phase 4, and commits planning files and merges only after you say yes.
 - The plugin bundles four MCP servers (inspo, awwwards, dembrandt, responsively); the npm ones are version-pinned and run through `npx`.
 
+## Regression checks
+
+Recovery and browser-fallback decision fixtures live in [tests/README.md](tests/README.md). They cover watchdog, resume, replacement workers and final visual revisions. The optional model run checks the shipped prompts; it does not replace live browser and full-workflow testing.
+
 ## Licensing
 
 - Fashion: MIT (`LICENSE`).

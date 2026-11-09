@@ -36,7 +36,37 @@ Show the full table (skill, source, action, target path). State that this writes
 ## 4. Prerequisites
 Check and report. Install nothing yourself; give the command and let the user run it.
 - `node` and `npx` (`node --version`). Needed by the MCP servers and web builds.
-- Playwright browsers for the awwwards capture tools: `npx playwright --version`; if missing, suggest `npx playwright install chromium`.
+- Browser fallback for prototype captures, checker keyboard interactions, saved review evidence, and awwwards capture: identify a named real-browser tool and prove it works. A CLI version alone does not prove a module resolves or a browser launches. An awwwards-managed install does not make `import('playwright')` available to project scripts.
+- For project-local Playwright, run this probe from the project root with a 30-second command timeout. It installs nothing. Report module, launch, keyboard or screenshot errors separately:
+  ```sh
+  node --input-type=module <<'JS'
+  import { mkdtempSync, statSync, rmSync } from 'node:fs';
+  import { tmpdir } from 'node:os';
+  import { join } from 'node:path';
+  const { chromium } = await import('playwright');
+  const browser = await chromium.launch({ timeout: 10000 });
+  let evidence;
+  try {
+    evidence = mkdtempSync(join(tmpdir(), 'fashion-browser-'));
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.setDefaultTimeout(5000);
+    await page.setContent('<button>Test</button><output></output><script>document.onkeydown = e => document.querySelector("output").textContent = e.key;</script>');
+    await page.keyboard.press('Tab');
+    if (await page.locator('button').evaluate(button => button !== document.activeElement)) throw new Error('Tab focus failed');
+    await page.keyboard.press('Escape');
+    if (await page.locator('output').textContent() !== 'Escape') throw new Error('Escape failed');
+    const screenshot = join(evidence, 'probe.png');
+    await page.screenshot({ path: screenshot });
+    if (!statSync(screenshot).size) throw new Error('Screenshot file empty');
+    console.log('Playwright fallback ready: Chromium, viewport, Tab, Escape, saved screenshot');
+  } finally {
+    try { await browser.close(); }
+    finally { if (evidence) rmSync(evidence, { recursive: true }); }
+  }
+  JS
+  ```
+- If the module is missing, suggest `npm install --save-dev playwright` in that project (adapt to its package manager). If the browser binary is missing, suggest `npx playwright install chromium` after the module is installed. Give commands only; do not install. For another real-browser tool, run equivalent capability checks through that tool. Record tool/runtime, working directory, capabilities and gaps. See the [Playwright library installation guide](https://playwright.dev/docs/library).
+- Setup outside a project reports machine capabilities only. Repeat the probe in the actual project before phase 3 prototypes and phase 4 checks. Report missing fallback early even when Responsively works, since keyboard or saved-file coverage may still need it.
 - Web builds: `git`.
 - Mobile, only if the user says which stack they use: Xcode (`xcodebuild -version`) for SwiftUI; Flutter (`flutter --version`) for Flutter.
 

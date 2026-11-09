@@ -1,0 +1,33 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "runway-design-1",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "results/shoponrunway/designs/design-1-running-order",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3101"
+      ],
+      "port": 3101
+    },
+    {
+      "name": "runway-design-2",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "results/shoponrunway/designs/design-2-labels-lights-down",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3102"
+      ],
+      "port": 3102
+    }
+  ]
+}

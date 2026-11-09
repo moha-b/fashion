@@ -1,0 +1,87 @@
+[
+  {
+    "id": "built-waiting-for-merge",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket A is in-progress on board, stage built, attempt 1, taskId null. result.md is attempt 1, completed 11:30. Queued behind another checker. Last builder log 11:30.",
+    "expected": {"flag":"ok","action":"wait","stage":"built","attempt":1}
+  },
+  {
+    "id": "fresh-checker",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket B stage checking, attempt 1, taskId checker-b, stageStartedAt 11:57. Current-role heartbeat 11:59 says browser interaction in progress. No check.md yet. Task running.",
+    "expected": {"flag":"ok","action":"wait","stage":"checking","attempt":1}
+  },
+  {
+    "id": "completed-builder-uncollected",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket C stage building, attempt 1. Current-attempt result.md completed 11:50, includes committed branch and passed self-checks. Task finished. Last heartbeat 11:40. Root currently occupied by another checker. Choose next immediate action before dispatch.",
+    "expected": {"flag":"finished, not collected","action":"collect-result","stage":"built","attempt":1}
+  },
+  {
+    "id": "stale-builder-heartbeat",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket D stage building, attempt 1, stageStartedAt 11:00. No result.md. Latest matching heartbeat and branch commit 11:30. Task status and command progress not yet inspected.",
+    "expected": {"flag":"stuck","action":"inspect-task","stage":"building","attempt":1}
+  },
+  {
+    "id": "old-result-during-fix",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket E stage fixing, attempt 2, taskId reproducer-e. Current-role heartbeat 11:59, stageStartedAt 11:55, task running. Stray result.md is attempt 1 from 11:00; no result for attempt 2.",
+    "expected": {"flag":"ok","action":"wait","stage":"fixing","attempt":2}
+  },
+  {
+    "id": "hung-checker",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket F stage checking, attempt 1, taskId checker-f, stageStartedAt 11:20. No check.md. Last checker heartbeat 11:21: waiting for dev server. Task and its server not inspected yet. Builder result.md from 11:00 exists.",
+    "expected": {"flag":"stuck","action":"inspect-task","stage":"checking","attempt":1}
+  },
+  {
+    "id": "hung-merger-before-commit",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket G stage merging, attempt 1, taskId merger-g, stageStartedAt 11:20. Last merger heartbeat 11:21. Git confirms branch not merged. Task status and active command not inspected.",
+    "expected": {"flag":"stuck","action":"inspect-task","stage":"merging","attempt":1}
+  },
+  {
+    "id": "completed-checker-uncollected",
+    "context": "Now 2026-11-09T12:00:00Z. Ticket H stage checking, attempt 2. check.md written 11:50 matches attempt 2 and current HEAD; every eval row passes with evidence. Task finished; heartbeat last 11:40. Choose action to collect/compare, before declaring done.",
+    "expected": {"flag":"finished, not collected","action":"collect-check","stage":"checking","attempt":2}
+  },
+  {
+    "id": "resume-landed-deleted-branch",
+    "context": "Resume ticket I, stage merging, attempt 1. Git proves builtCommit is on main in recorded merge commit; worktree and branch already deleted. log.md confirms post-merge build passed and cleanup finished before interruption. No check.md. Previous task and commands terminated; shared root free. Current HEAD is merge commit. Choose next dispatch.",
+    "expected": {"flag":"none","action":"launch-checker","stage":"checking","attempt":1}
+  },
+  {
+    "id": "replace-confirmed-dead-builder",
+    "context": "Ticket J stage building, attempt 1, flagged stuck once. Router already inspected and confirmed original task and all its commands terminated. No complete result. Worktree commits preserved, abandoned worktree cleaned. Shared dependencies ready. Choose replacement dispatch.",
+    "expected": {"flag":"none","action":"launch-builder","stage":"building","attempt":2}
+  },
+  {
+    "id": "repeat-resume-active-replacement",
+    "context": "Second resume: ticket J stage building, attempt 2, taskId builder-j-replacement; replacement worktree exists. Task inspection confirms replacement active and current-role heartbeat fresh. Stray result from attempt 1 exists. Choose next action.",
+    "expected": {"flag":"none","action":"wait","stage":"building","attempt":2}
+  },
+  {
+    "id": "replace-confirmed-dead-checker",
+    "context": "Ticket K stage checking, attempt 3. Hung checker and dev server confirmed terminated, partial old check archived. Code already merged; current HEAD unchanged. Shared browser/root free. This stage has not previously been replaced. Choose replacement dispatch.",
+    "expected": {"flag":"none","action":"launch-checker","stage":"checking","attempt":3}
+  },
+  {
+    "id": "legacy-invalid-state",
+    "context": "Resume ticket L. Legacy state has stage checked, attempt 1, an extra field score:9. Git confirms merge landed. Current-commit check.md has 9 passes and 1 not run. Reason is missing browser capability; tooling not yet inspected. Task stopped. Choose initial state repair before retry planning, and list contract fields allowed in repaired state.",
+    "expected": {"flag":"none","action":"migrate-state","stage":"blocked","attempt":1,"closedState":true}
+  },
+  {
+    "id": "legacy-browser-restriction",
+    "context": "Resume ticket M, blocked, attempt 1. Current-commit check.md: 9 pass, Escape not run. Board copied old plugin Responsively-only policy, not a user restriction. Project-local Playwright preflight now proves keyboard and screenshots work. Main and task status reconciled, browser/root free. Choose dispatch; no app bug known.",
+    "expected": {"flag":"none","action":"launch-checker","stage":"checking","attempt":1}
+  },
+  {
+    "id": "explicit-user-browser-restriction",
+    "context": "Resume ticket N, blocked, attempt 1. Escape check not run. User explicitly prohibited every browser except Responsively for this project; it cannot press Escape. Playwright is installed but prohibited. No permitted tool can run the item. All tasks stopped.",
+    "expected": {"flag":"none","action":"ask-user","stage":"blocked","attempt":1}
+  },
+  {
+    "id": "final-visual-revision",
+    "context": "Ticket O stage done, attempt 1. Final critic observed mobile text clipping that violates this already authorized ticket's requirement. No new scope/design choice; before screenshots saved. Previous task stopped; root/browser free; prior evidence archived. Choose implementation owner and next dispatch.",
+    "expected": {"flag":"none","action":"launch-reproducer","stage":"fixing","attempt":2}
+  },
+  {
+    "id": "setup-cli-only",
+    "context": "Setup reports npx playwright --version works from awwwards tooling. In actual project, import('playwright') fails with Cannot find module 'playwright'. No other capable browser fallback. No package install authorized. Choose next setup action, stage/attempt not applicable.",
+    "expected": {"flag":"none","action":"report-missing-dependency","stage":null,"attempt":null}
+  }
+]

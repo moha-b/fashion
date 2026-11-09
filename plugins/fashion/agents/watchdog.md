@@ -13,16 +13,16 @@ Your prompt gives you the project root. Work there.
 ## Read
 - `tickets/board.md`: the tickets that are `in-progress`, their start time and `blocked-by`.
 - `tickets/<id>/log.md` for each of those: the heartbeat lines.
-- `tickets/<id>/result.md` if present.
-- `tickets/<id>/state.json` for the current stage, attempt, task ID and update time.
+- `tickets/<id>/result.md` and `check.md` if present; compare their attempt and commit with state.
+- `tickets/<id>/state.json` for the current stage, attempt, task ID, `stageStartedAt` and update time. Read the state and heartbeat contract in the current Fashion skill. Ignore log lines from earlier attempts or roles, or before `stageStartedAt`.
 - With git: `git worktree list` and, per worker branch, `git log -1 --format=%cI <branch>`.
 - The current time from `date -u +%FT%TZ`.
 
 ## Flag
-- **stuck**: stage is `building` or `fixing`, no new line in `log.md` for more than 15 minutes, and no commit on its branch in that time. Also flag a building ticket with no `log.md` after 10 minutes. A known active long-running command needs inspection, not automatic termination.
-- **looping**: the same step text three or more times in a row in `log.md`, or the last six lines alternating between two steps.
+- **stuck**: applies to active stages `building`, `fixing`, `merging`, and `checking`. Flag no heartbeat from the current role/attempt after 10 minutes from `stageStartedAt`, or no progress for more than 15 minutes since its latest heartbeat (or relevant commit for a builder/reproducer). A checker waiting on a dev server and a merger hanging during its build are covered too. A known active long-running command needs inspection, not automatic termination. Report task ID, role, stage and last progress time; never recommend starting a builder for a hung checker or merger.
+- **looping**: the current role/attempt repeats the same step text three or more times in a row, or its last six lines alternate between two steps. Repeated command polling alone is not a loop when output shows progress.
 - **waiting**: an `in-progress` ticket whose `blocked-by` lists a ticket that is not `done`, or two tickets that block each other directly or through a chain.
-- **finished, not collected**: a result for the current attempt exists and stage remains `building` or `fixing` more than 5 minutes after the result file was written. This asks the router to collect it, never to restart it. A ticket queued in `built`, `merged` or `checking` is not a stuck builder.
+- **finished, not collected**: a result for the current attempt exists and stage remains `building` or `fixing` more than 5 minutes after the result file was written; likewise a current-attempt, current-commit `check.md` left in `checking` for more than 5 minutes. Completed evidence takes precedence over stale-heartbeat flags; during the first 5 minutes, report `ok`. This asks the router to collect it, never to restart it. If Git shows the merge has landed while state remains `merging`, report the commit and ask the router to reconcile build/cleanup progress before restarting anything. Queued stages `built` and `merged` are not stuck execution; `checking` means a checker was dispatched, not that it is queued.
 
 ## Report
 Append to `tickets/watchdog.md`:

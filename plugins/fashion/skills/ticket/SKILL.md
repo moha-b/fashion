@@ -41,7 +41,7 @@ Split the build into tickets a worker can finish alone, in its own context.
 ## tickets/<id>/eval.md
 A numbered list. Each item is one check with a clear pass condition that the checker can run without asking. Include, as they apply:
 1. Build passes: `npm run build` (web), `flutter analyze` (Flutter) or an Xcode build (SwiftUI). Lint passes where configured.
-2. Browser or simulator steps: for web, `responsively` at phone, tablet and desktop, one device at a time: the URL, what to click or type, and what must be visible. Use URLs that exist in the app (check its routes) so the checker never has to reinterpret an item. For mobile, the simulator screen and gesture.
+2. Browser or simulator steps: for web, `responsively` at phone, tablet and desktop, one device at a time: the URL, what to click or type, and what must be visible. Use URLs that exist in the app (check its routes) so the checker never has to reinterpret an item. Responsively can navigate, click, type (with Enter), read the page and take screenshots; it cannot press other keys. For behaviour that needs Escape, Tab or arrow keys, write the item as a check the checker can run without a browser: a test in the project's own test runner if it has one, otherwise a code check naming the handler ("`onKeyDown` closes on `Escape`") and marked `code check`. For mobile, the simulator screen and gesture.
 3. Each "Must do" line from `rd.md` as its own check.
 4. Contrast: dembrandt `check_contrast` on the text and background pairs this ticket introduces. Pass at WCAG AA.
 5. Skill checkers: the checker of each design skill the ticket uses (for example scrollcraft `verify.mjs`).

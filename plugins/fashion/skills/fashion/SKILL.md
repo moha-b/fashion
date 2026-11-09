@@ -111,7 +111,8 @@ When a builder returns (merges and checks share the project root, so run one mer
 3. Launch `fashion:checker` (implement model) with the ticket id. It runs every step in `eval.md` against the merged app and writes `tickets/<id>/check.md`.
 4. Compare `check.md` with `eval.md` item by item yourself. Every item must have a pass with evidence. A missing item counts as a fail.
 5. All pass: set the ticket `done`. Any fail: launch `fashion:reproducer` (implement model, worktree when `git: true`) with the ticket id and the failing items, then merge and check again. After two failed rounds, stop and ask the user.
-6. Bugs the checker found that are outside the ticket (including bugs that were there before): add a `draft` ticket `bug-<n>` for each, and mention them to the user.
+6. If the checker marked items `not run` because the Responsively window was closed, ask the user once to open the Responsively app and leave it open, then run the checker again. Responsively is the only browser tool for checks.
+7. Bugs the checker found that are outside the ticket (including bugs that were there before): add a `draft` ticket `bug-<n>` for each, and mention them to the user.
 
 ### 4.4 When to ask the user
 Only when there is a choice to make: marking tickets ready, a merge conflict the merger could not resolve, a ticket that failed twice, a stuck worker the watchdog flagged twice, scope or design questions a worker raised in `result.md`. Batch these into one short message.

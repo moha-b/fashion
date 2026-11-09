@@ -16,6 +16,7 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
 - References are always saved to disk (see phase 2).
 - Never run `git init` without the user's yes. It is offered once, before phase 4.
 - Keep messages short. One question at a time.
+- For exploration, use the prototype gate below before tickets. The router delegates prototype code to a worker; it never writes app code.
 
 ## state.json
 ```
@@ -45,7 +46,7 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
 |---|---|---|---|
 | router | `fashion:router` | opus, high effort | the agent's frontmatter |
 | research | `fashion:competitor-researcher`, `fashion:ux-analyst` | opus, high effort | `state.models.research` |
-| implement | `fashion:builder`, `fashion:reproducer`, `fashion:merger`, `fashion:checker` | sonnet | `state.models.implement` |
+| implement | `fashion:prototyper`, `fashion:visual-critic`, `fashion:builder`, `fashion:reproducer`, `fashion:merger`, `fashion:checker` | sonnet | `state.models.implement` |
 | watchdog | `fashion:watchdog` | sonnet | `state.models.watchdog` |
 
 Whenever you launch one of these agents, pass the role's model from `state.models` as the Agent tool's `model`. Fall back to the default when the key is missing.
@@ -54,7 +55,7 @@ Whenever you launch one of these agents, pass the role's model from `state.model
 1. Read what the user gave: URL, screenshots, code, decks, files in the folder. Use it.
 2. If they gave enough, restate the product in a few lines (what, who, market, tone) and ask for a yes. If not enough, run the `fashion:grilling` skill.
 3. Settle the platform: web or mobile. One only. If mobile, ask Flutter or SwiftUI. Give a recommended answer.
-4. Write `.fashion/brief.md`: product, audience, market, tone, platform, stack, constraints, what exists already.
+4. Write `.fashion/brief.md`: product, audience, market, tone, platform, stack, constraints, what exists already, primary user task, success criteria, and available brand/media assets. Mark unknown critical assets as open questions.
 5. Show the brief. On yes, set phase 2.
 
 ## Phase 2: Research
@@ -73,21 +74,24 @@ Whenever you launch one of these agents, pass the role's model from `state.model
 ## Phase 3: Direction (loops)
 1. Show what competitors do. Ask: same direction or a new one?
 2. Present options from `ux/directions.md` that fit the platform. Add your own where they are thin.
-   - Web: 3D with React Three Fiber, ScrollCraft scenes, bang-motion, unusual layouts.
-   - Mobile: native motion, gestures, haptics, Live Activities (iOS).
+   - Consider web 3D, scroll scenes, or unusual layouts only when they serve a stated user or brand purpose.
+   - Consider mobile gestures, haptics, or Live Activities only when they serve a stated user task.
 3. Give a recommendation. Let the user pick or mix.
-4. Append each decision and its reason to `ux/decisions.md` and `state.decisions`. Record rejected options too.
-5. Increment `state.loop`. Ask: another round, or build?
-6. On build, restate the decisions in a short list and get a yes. Set phase 4.
+4. Before approving a direction, delegate a lightweight prototype to `fashion:prototyper`: two materially different versions of the same representative screen with realistic content, at desktop and mobile sizes. The router supplies the brief, reference notes, and explicit scope. The prototype needs no tickets or shared component inventory. The worker writes code and saves screenshots in the project; the router does not write app code. If a prototype is already present, reuse it.
+5. Run `fashion:visual-critic` on the rendered results, then review them with the user. Assess hierarchy, composition, typography, imagery, brand fit, responsive behavior, and the primary task. Identify up to three concrete weaknesses and delegate a revision to the prototyper. Test the defining interaction, including reduced-motion behavior where relevant. Record the accepted visual baseline and screenshot paths in `ux/decisions.md`.
+6. Check that assets needed for the defining interaction exist. If they do not, show a concrete fallback and get the user's decision before treating that direction as build-ready. Record the purpose and asset plan of each major effect.
+7. Append each decision and its reason to `ux/decisions.md` and `state.decisions`. Record rejected options and research uncertainty too.
+8. Increment `state.loop`. Ask: another round, or build?
+9. On build, restate the decisions in a short list and get a yes. Set phase 4. If the user explicitly declines prototypes, record that waiver and proceed.
 
 ## Phase 4: Build
-The router plans and assigns. Workers write the code. Read `.fashion/brief.md`, `ux/decisions.md` and `references/*/notes.md` first.
+The router plans and assigns. Workers write the code. Read `.fashion/brief.md`, `ux/decisions.md` and `references/*/notes.md` first. Expand from the accepted visual baseline; keep one owner for the first complete screen, then parallelize independent screens after shared interfaces stabilize.
 
 ### 4.1 Git
 If `state.git` is `null`:
 - Run `git rev-parse --is-inside-work-tree`. If it is a repo, set `git: true`.
 - If not, ask once: "Phase 4 runs workers in parallel git worktrees and merges them. Run `git init` here and commit the planning files? If no, workers run one at a time in this folder." Recommend yes.
-  - Yes: `git init`, add a `.gitignore` for the platform (at least `node_modules/`, `.next/`, `build/`, `.dart_tool/`, `DerivedData/`), commit `.fashion/`, `research/`, `ux/`, `references/`, `tickets/` and `.claude/settings.json`. Set `git: true`.
+  - Yes: `git init`, add a `.gitignore` for the platform (at least `node_modules/`, `.next/`, `build/`, `.dart_tool/`, `DerivedData/`), commit `.fashion/`, `research/`, `ux/`, `references/`, `prototypes/`, `tickets/` and `.claude/settings.json`. Set `git: true`.
   - No: set `git: false`.
 
 ### 4.2 Components
@@ -107,25 +111,32 @@ Check every new component against what exists. If it would repeat the markup or 
 ### 4.3 Tickets
 Run the `fashion:ticket` skill. It writes `tickets/<id>/rd.md`, `tickets/<id>/eval.md` and `tickets/board.md`, all as `draft`. Each ticket names the components it creates or reuses from `ux/components.md`. Show the board. Tell the user to mark the tickets they want built as `ready` (they can say "all ready" and you update the board). Only `ready` tickets are assigned.
 
+### Per-ticket state and recovery
+The router owns `tickets/<id>/state.json`; `board.md` is a human-readable view, not the source of truth. Create state before launch:
+```
+{"stage":"draft","attempt":0,"taskId":null,"branch":null,"worktree":null,"builtCommit":null,"mergeCommit":null,"checkedCommit":null,"updatedAt":"<UTC ISO time>"}
+```
+Stages: `draft`, `ready`, `building`, `built`, `merging`, `merged`, `checking`, `fixing`, `done`, `blocked`. Change the stage before starting work and after confirming its result; update the board from it. Increment `attempt` for each builder or reproducer launch and put that attempt in its prompt. Save the returned task ID immediately; save branch, worktree and commit from the worker result. Put attempt and checked commit in `check.md`. Ignore results from older attempts. Do not launch another worker if an active task or live worktree already owns the attempt. Reconcile state with Git and evidence after restart before launching or merging anything. A merge already present on main proceeds to checking; a completed check for the current commit proceeds to comparison. Never merge a deleted branch or repeat a completed merge. Clean an abandoned worktree only after confirming its task has stopped and its commits are preserved.
+
 ### 4.4 Assign
 Loop until no `ready` or `in-progress` ticket is left:
-1. Pick `ready` tickets whose `blocked-by` are all `done`. With `git: true`, take up to `maxWorkers` at once; with `git: false`, one at a time.
-2. Commit any changed planning files first (`git: true`), so the worktrees see the latest tickets.
-3. Set each to `in-progress` on the board, with the time.
+1. Pick tickets with stage `ready` whose `blocked-by` are all `done`. With `git: true`, take up to `maxWorkers` at once; with `git: false`, one at a time.
+2. Commit any changed planning and prototype files first (`git: true`), so the worktrees see the latest tickets and accepted visual baseline.
+3. Set each state to `building` with incremented attempt and update the board to `in-progress`, with the time.
 4. Launch the worker in the background:
    - Mode `solo`: one `fashion:builder` (implement model). With `git: true` pass `isolation: "worktree"`.
-   - Mode `team`: if agent-team tools are available (TeamCreate), create a team of a builder and a checker for the ticket. Otherwise fall back to `solo` and say so once.
-   - The prompt names the ticket id and the absolute path of this folder (the project root), which holds `tickets/`, `ux/`, `.fashion/` and `references/`.
+   - Mode `team`: if agent-team tools are available (TeamCreate), create a team of a builder and a checker for fast feedback. The team's checker gives provisional feedback only; the official `check.md` still runs after merge at the recorded commit. Otherwise fall back to `solo` and say so once.
+   - The prompt names the ticket id, attempt number and the absolute path of this folder (the project root), which holds `tickets/`, `ux/`, `.fashion/` and `references/`. Record the task ID in `state.json` immediately.
 5. Start the watchdog (4.6) if it is not running.
 6. Go back to the user. Answer their messages while workers run. Do not wait in silence, and never do a worker's job yourself.
 
 When a builder returns (merges and checks share the project root, so run one merger or checker at a time and queue the rest):
-1. Read `tickets/<id>/result.md`. It must record a clean-code-guard pass with each finding fixed or justified, or say the guard was not installed and the component rules were applied by hand. If neither, send the ticket back to the builder before merging.
-2. `git: true`: launch `fashion:merger` (implement model) with the ticket id and the branch named in `result.md`. If it reports a conflict it could not resolve, ask the user.
-3. Launch `fashion:checker` (implement model) with the ticket id. It runs every step in `eval.md` against the merged app and writes `tickets/<id>/check.md`.
-4. Compare `check.md` with `eval.md` item by item yourself. Every item must have a pass with evidence. A missing item counts as a fail. A browser item passed with any tool other than `responsively` (Playwright, curl, a headless script) counts as `not run`, however good the evidence.
-5. All pass: set the ticket `done`. Any fail: launch `fashion:reproducer` (implement model, worktree when `git: true`) with the ticket id and the failing items. If a failing item needs the browser, queue it with the mergers and checkers and tell it the browser is its own, then merge and check again. After two failed rounds, stop and ask the user.
-6. If the checker marked items `not run` because the Responsively window was closed, ask the user once to open the Responsively app and leave it open, then run the checker again. Responsively is the only browser tool for checks.
+1. Read `tickets/<id>/result.md` for the current attempt. It must record a clean-code-guard pass with each finding fixed or justified, or say the guard was not installed and the component rules were applied by hand. If neither, send the ticket back to the builder before merging. Set stage `built`.
+2. `git: true`: set stage `merging`, then launch `fashion:merger` with the ticket id and branch. Record merge commit and set `merged` only after verifying the merge landed. If it reports a conflict it could not resolve, ask the user.
+3. Set stage `checking`; launch `fashion:checker` with ticket id, attempt and merged commit. It runs every step in `eval.md` against that commit and writes `check.md`.
+4. Compare `check.md` with `eval.md` item by item yourself. Every item must have a pass with evidence and the expected attempt/commit. A missing item counts as a fail. Browser checks may use Responsively or an equivalent real browser; require tool name, viewport, URL, interactions, assertions, screenshot path where supported, and limitations. HTTP-only checks do not replace browser checks.
+5. All pass: set stage and board status `done`. Any fail: set stage `fixing`, increment attempt, and launch `fashion:reproducer` (implement model, worktree when `git: true`) with the ticket id, attempt and failing items. If a failing item needs the browser, queue it with the mergers and checkers and tell it the browser is its own, then merge and check again. After two failed rounds, stop and ask the user.
+6. If browser items are `not run`, try a capable real-browser fallback. Ask the user only if no available tool can complete them.
 7. Bugs the checker found that are outside the ticket (including bugs that were there before): add a `draft` ticket `bug-<n>` for each, and mention them to the user.
 
 ### 4.5 When to ask the user
@@ -136,7 +147,7 @@ While any ticket is `in-progress`, run `fashion:watchdog` (watchdog model) every
 - If the CronCreate tool is available, schedule it with `*/10 * * * *` and a prompt that launches `fashion:watchdog` in the background. Delete the job (CronDelete) when no ticket is `in-progress`.
 - Otherwise, launch it each time you get control back and its last run in `tickets/watchdog.md` is more than 10 minutes old.
 
-When the watchdog flags a worker: stop it (TaskStop) and relaunch the ticket once with the watchdog's note in the prompt. If it is flagged again, ask the user.
+Handle watchdog flags by type. `finished, not collected`: collect the result and advance its stage. `waiting`: resolve the dependency or queue. `stuck` or `looping`: inspect the saved task ID and active command before stopping; then confirm termination before relaunching once with a new attempt and the watchdog note. Do not relaunch completed, queued-for-merge, or queued-for-check work. Preserve any worktree commits before cleanup. If a worker stalls again, ask the user.
 
 ### Code rules for workers
 Every worker follows these. The router names them in each builder's prompt, because otherwise they only apply when someone asks.
@@ -166,10 +177,10 @@ Every worker follows these. The router names them in each builder's prompt, beca
 
 ### Platform notes for tickets and workers
 - Web: scaffold with a pinned major: `npx create-next-app@16 <dir> --ts --app --tailwind --eslint` (Next.js 16 at the time of writing; check `npm view create-next-app version` and keep the pinned major in the command). Ask before overwriting a non-empty folder. Add React Three Fiber (`three`, `@react-three/fiber`, `@react-three/drei`) only if 3D was chosen. Workers use the installed design skills as the decisions require: `design-taste-frontend`, `hallmark`, `scrollcraft`, `bang-motion`. If one is not installed, they say so and continue without it.
-- Web checks: `responsively` for screenshots at phone, tablet and desktop widths; dembrandt `check_contrast` for colour; each used skill's own checker.
+- Web checks: prefer `responsively` at phone, tablet and desktop widths; use a named real-browser fallback when it is unavailable or lacks a required capability. Save screenshots where supported. Use dembrandt `check_contrast` and each used skill's checker.
 - Flutter: `flutter create`, then build screens. Checks: `flutter analyze`, launch on a simulator.
 - SwiftUI: workers follow the `ios-change-workflow` skill if installed, and the SwiftUI skills it names. Build in Xcode, verify in the iOS Simulator.
 - Mobile: the web design skills do not apply. If the user wants store screenshots, use `app-store-screenshots` if installed.
 
 ### Close
-When every ticket the user marked `ready` is `done`, show what was built and where. List open questions and `draft` tickets left. Set phase to `done` only after the user confirms.
+When every ticket the user marked `ready` is `done`, run `fashion:visual-critic` on the complete primary user journey against the accepted visual baseline, including responsive behavior and brand fit. Record visible weaknesses and revise them before showing what was built and where. List open questions and `draft` tickets left. Set phase to `done` only after the user confirms.

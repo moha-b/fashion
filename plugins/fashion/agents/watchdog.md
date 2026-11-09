@@ -14,14 +14,15 @@ Your prompt gives you the project root. Work there.
 - `tickets/board.md`: the tickets that are `in-progress`, their start time and `blocked-by`.
 - `tickets/<id>/log.md` for each of those: the heartbeat lines.
 - `tickets/<id>/result.md` if present.
+- `tickets/<id>/state.json` for the current stage, attempt, task ID and update time.
 - With git: `git worktree list` and, per worker branch, `git log -1 --format=%cI <branch>`.
 - The current time from `date -u +%FT%TZ`.
 
 ## Flag
-- **stuck**: no new line in `log.md` for more than 15 minutes, and no commit on its branch in that time. Also a ticket `in-progress` for more than 10 minutes with no `log.md` at all.
+- **stuck**: stage is `building` or `fixing`, no new line in `log.md` for more than 15 minutes, and no commit on its branch in that time. Also flag a building ticket with no `log.md` after 10 minutes. A known active long-running command needs inspection, not automatic termination.
 - **looping**: the same step text three or more times in a row in `log.md`, or the last six lines alternating between two steps.
 - **waiting**: an `in-progress` ticket whose `blocked-by` lists a ticket that is not `done`, or two tickets that block each other directly or through a chain.
-- **finished, not collected**: `result.md` exists but the ticket is still `in-progress` for more than 5 minutes.
+- **finished, not collected**: a result for the current attempt exists and stage remains `building` or `fixing` more than 5 minutes after the result file was written. This asks the router to collect it, never to restart it. A ticket queued in `built`, `merged` or `checking` is not a stuck builder.
 
 ## Report
 Append to `tickets/watchdog.md`:

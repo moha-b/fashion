@@ -7,13 +7,25 @@
 //   stop  --root R [--owner ID] [--role ROLE] [--attempt N] [--pid P]
 //   list  --root R [--owner ID]
 //
-// One record per process in <root>/.fashion/processes/, so parallel workers never
-// write the same file. Identity = pid + process start time + working directory.
+// How ownership stays verifiable: `start` launches a small supervisor (this
+// script in `__supervise` mode) as the leader of a new process group. The
+// supervisor never changes directory, runs the command as its child in the same
+// group, and stays alive until every process in the group has exited, even
+// after the command itself exits or its children change directory. The record
+// holds the supervisor's pid, start time and cwd; `stop` kills the group only
+// while that identity still matches. If the supervisor is gone but processes
+// remain in the group, ownership cannot be proven: `stop` refuses (exit 4) and
+// keeps the record. One record per process group in <root>/.fashion/processes/.
+//
+// Exit codes: 0 ok, 1 start failed (nothing left running), 2 usage,
+// 3 port held by another process, 4 refused or unverified (record kept).
 import { spawn, spawnSync } from "node:child_process";
-import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, writeFileSync, writeSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
+const SELF = fileURLToPath(import.meta.url);
 const env = { ...process.env, LC_ALL: "C", LANG: "C" };
 
 function parseArgs(argv) {
@@ -35,13 +47,9 @@ function fail(code, message) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function ps(pid, field) {
-  const out = spawnSync("ps", ["-o", `${field}=`, "-p", String(pid)], { env, encoding: "utf8" });
-  return out.status === 0 ? out.stdout.trim() : null;
-}
-
 function startTime(pid) {
-  return ps(pid, "lstart"); // e.g. "Mon Nov  9 16:54:30 2026"; null when gone
+  const out = spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], { env, encoding: "utf8" });
+  return out.status === 0 && out.stdout.trim() ? out.stdout.trim() : null; // null when gone
 }
 
 function cwdOf(pid) {
@@ -55,8 +63,12 @@ function cwdOf(pid) {
   }
 }
 
+// Every live process in the group. Throws when the group cannot be inspected,
+// so an inspection failure is never mistaken for an empty group.
 function groupMembers(pgid) {
   const out = spawnSync("pgrep", ["-g", String(pgid)], { env, encoding: "utf8" });
+  if (out.status === 1) return [];
+  if (out.status !== 0) throw new Error(`pgrep -g ${pgid} failed: ${out.error?.message ?? out.stderr.trim()}`);
   return out.stdout.split("\n").map(Number).filter((n) => n > 0);
 }
 
@@ -69,9 +81,7 @@ function portInUse(port) {
   });
 }
 
-function recordsDir(root) {
-  return path.join(root, ".fashion", "processes");
-}
+const recordsDir = (root) => path.join(root, ".fashion", "processes");
 
 function loadRecords(root) {
   const dir = recordsDir(root);
@@ -92,21 +102,16 @@ function matches(record, opts) {
     && (opts.pid === undefined || String(record.pid) === String(opts.pid));
 }
 
-// "match": the recorded leader is alive with the same start time and cwd.
-// "orphans": the leader is gone but members of its group remain in the recorded
-// cwd, started no earlier than the leader. "exited": nothing left. "mismatch":
-// the PID now belongs to a different process (reuse) - never touch it.
+// "match": the supervisor is alive with the recorded start time and cwd, so the
+// group is ours. "mismatch": the pid now belongs to another process (reuse).
+// "unverified": the supervisor is gone but the group still has members whose
+// ownership cannot be proven. "exited": the group is empty.
 function identity(record) {
   const lstart = startTime(record.pid);
   if (lstart !== null) {
     return lstart === record.startedAt && cwdOf(record.pid) === record.cwd ? "match" : "mismatch";
   }
-  const since = Date.parse(record.startedAt);
-  const members = groupMembers(record.pgid).filter((pid) => {
-    const started = Date.parse(startTime(pid) ?? "");
-    return cwdOf(pid) === record.cwd && Number.isFinite(started) && started >= since;
-  });
-  return members.length ? "orphans" : "exited";
+  return groupMembers(record.pgid).length ? "unverified" : "exited";
 }
 
 async function killGroup(pgid) {
@@ -120,6 +125,26 @@ async function killGroup(pgid) {
   return groupMembers(pgid).length === 0;
 }
 
+// Runs as the group leader. Keeps the group verifiable until it is empty.
+async function supervise(opts) {
+  const log = openSync(opts.log, "a");
+  const note = (text) => writeSync(log, `[owned-process] ${new Date().toISOString()} ${text}\n`);
+  const child = spawn(opts.command[0], opts.command.slice(1), { stdio: ["ignore", log, log], env: process.env });
+  const code = await new Promise((resolve) => {
+    child.once("error", (error) => { note(`could not start command: ${error.message}`); resolve(127); });
+    child.once("exit", (exitCode, signal) => { note(`command exited (${exitCode ?? signal})`); resolve(exitCode ?? 128); });
+  });
+  // The command is done; stay the verifiable leader while anything else in the group runs.
+  for (;;) {
+    let others;
+    try { others = groupMembers(process.pid).filter((pid) => pid !== process.pid); } catch { others = [-1]; }
+    if (!others.length) break;
+    await sleep(300);
+  }
+  closeSync(log);
+  process.exit(code);
+}
+
 async function start(opts) {
   for (const key of ["root", "owner", "role", "attempt", "log"]) if (!opts[key]) fail(2, `start needs --${key}`);
   if (!opts.command.length) fail(2, "start needs a command after --");
@@ -128,25 +153,47 @@ async function start(opts) {
   }
   const root = realpathSync(opts.root);
   const cwd = realpathSync(opts.cwd ?? process.cwd());
-  const log = openSync(opts.log, "a");
-  const child = spawn(opts.command[0], opts.command.slice(1), { cwd, detached: true, stdio: ["ignore", log, log], env: process.env });
-  closeSync(log);
-  const exited = new Promise((resolve) => child.once("exit", (code) => resolve(code)));
-  child.once("error", (error) => fail(1, `could not start: ${error.message}`));
-  const early = await Promise.race([exited, sleep(500).then(() => undefined)]);
-  if (early !== undefined) fail(1, `process exited at once with code ${early}; see ${opts.log}`);
-  const startedAt = startTime(child.pid);
-  if (startedAt === null) fail(1, "process vanished before its identity was recorded");
+  const log = path.resolve(opts.log);
   mkdirSync(recordsDir(root), { recursive: true });
-  const record = {
-    file: path.join(recordsDir(root), `${opts.owner}-${opts.role}-a${opts.attempt}-${child.pid}.json`),
-    owner: opts.owner, role: opts.role, attempt: Number(opts.attempt), task: opts.task ?? null,
-    pid: child.pid, pgid: child.pid, startedAt, cwd, port: opts.port ? Number(opts.port) : null,
-    command: opts.command, log: path.resolve(opts.log), status: "running",
-    recordedAt: new Date().toISOString(), stoppedAt: null, note: null,
-  };
-  save(record);
-  child.unref();
+
+  const supervisor = spawn(process.execPath, [SELF, "__supervise", "--log", log, "--", ...opts.command],
+    { cwd, detached: true, stdio: "ignore", env: process.env });
+  const pgid = supervisor.pid;
+  if (!pgid) fail(1, "could not launch the supervisor");
+  const exited = new Promise((resolve) => supervisor.once("exit", (code) => resolve(code ?? 1)));
+
+  // Register immediately. If the identity cannot be read or the record cannot be
+  // written, stop the group we just created before failing, so nothing is left
+  // running without a record.
+  let record;
+  try {
+    let startedAt = null;
+    for (let i = 0; i < 20 && startedAt === null; i++) { startedAt = startTime(pgid); if (startedAt === null) await sleep(10); }
+    if (startedAt === null) throw new Error("could not read the supervisor's start time");
+    record = {
+      file: path.join(recordsDir(root), `${opts.owner}-${opts.role}-a${opts.attempt}-${pgid}.json`),
+      owner: opts.owner, role: opts.role, attempt: Number(opts.attempt), task: opts.task ?? null,
+      pid: pgid, pgid, startedAt, cwd, port: opts.port ? Number(opts.port) : null,
+      command: opts.command, log, status: "running",
+      recordedAt: new Date().toISOString(), stoppedAt: null, note: null,
+    };
+    save(record);
+  } catch (error) {
+    const cleaned = await killGroup(pgid).catch(() => false);
+    fail(cleaned ? 1 : 4, `could not record ownership (${error.message}); launched group ${pgid} ${cleaned ? "stopped" : "may still be running"}`);
+  }
+
+  // The supervisor exits only once the whole group is empty, so an early exit
+  // means nothing is left running.
+  const early = await Promise.race([exited, sleep(500).then(() => undefined)]);
+  if (early !== undefined) {
+    record.status = "exited";
+    record.stoppedAt = new Date().toISOString();
+    record.note = `exited at once with code ${early}`;
+    save(record);
+    fail(1, `process exited at once with code ${early} and left nothing running; see ${log}`);
+  }
+  supervisor.unref();
   const { file, ...printed } = record;
   console.log(JSON.stringify({ ...printed, record: file }));
 }
@@ -156,21 +203,34 @@ async function stop(opts) {
   const targets = loadRecords(realpathSync(opts.root)).filter((r) => r.status === "running" && matches(r, opts));
   let refused = 0;
   for (const record of targets) {
-    const state = identity(record);
-    if (state === "mismatch") {
-      refused++;
-      record.note = `pid ${record.pid} now belongs to another process (start time or cwd differs); left running`;
-      console.log(JSON.stringify({ pid: record.pid, owner: record.owner, result: "identity-mismatch" }));
-      save(record);
-      continue;
+    let result;
+    try {
+      const state = identity(record);
+      if (state === "mismatch") {
+        result = "identity-mismatch";
+        record.note = `pid ${record.pid} now belongs to another process (start time or cwd differs); left running`;
+      } else if (state === "unverified") {
+        result = "unverified";
+        record.note = `supervisor ${record.pid} is gone but processes remain in group ${record.pgid}; ownership cannot be proven, left running`;
+      } else if (state === "exited") {
+        result = "exited";
+      } else {
+        result = (await killGroup(record.pgid)) ? "stopped" : "still-running";
+        if (result === "still-running") record.note = "processes survived SIGKILL";
+      }
+    } catch (error) {
+      result = "inspection-failed";
+      record.note = `could not inspect the process group: ${error.message}`;
     }
-    const stopped = state === "exited" ? true : await killGroup(record.pgid);
-    if (!stopped) refused++;
-    record.status = stopped ? (state === "exited" ? "exited" : "stopped") : "running";
-    record.stoppedAt = stopped ? new Date().toISOString() : null;
-    record.note = stopped ? null : "processes survived SIGKILL";
+    if (result === "stopped" || result === "exited") {
+      record.status = result;
+      record.stoppedAt = new Date().toISOString();
+      record.note = null;
+    } else {
+      refused++;
+    }
     save(record);
-    console.log(JSON.stringify({ pid: record.pid, owner: record.owner, result: stopped ? record.status : "still-running" }));
+    console.log(JSON.stringify({ pid: record.pid, owner: record.owner, result }));
   }
   if (!targets.length) console.log(JSON.stringify({ result: "nothing-to-stop" }));
   process.exit(refused ? 4 : 0);
@@ -179,7 +239,10 @@ async function stop(opts) {
 function list(opts) {
   if (!opts.root) fail(2, "list needs --root");
   for (const record of loadRecords(realpathSync(opts.root)).filter((r) => matches(r, opts))) {
-    const live = record.status === "running" ? identity(record) : record.status;
+    let live = record.status;
+    if (record.status === "running") {
+      try { live = identity(record); } catch (error) { live = `inspection-failed: ${error.message}`; }
+    }
     const { file, ...rest } = record;
     console.log(JSON.stringify({ ...rest, live }));
   }
@@ -187,7 +250,8 @@ function list(opts) {
 
 const [mode, ...rest] = process.argv.slice(2);
 const opts = parseArgs(rest);
-if (mode === "start") await start(opts);
+if (mode === "__supervise") await supervise(opts);
+else if (mode === "start") await start(opts);
 else if (mode === "stop") await stop(opts);
 else if (mode === "list") list(opts);
 else fail(2, "usage: owned-process.mjs start|stop|list --root <project> ...");

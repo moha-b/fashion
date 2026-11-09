@@ -18,11 +18,11 @@ const instructions = ['skills/fashion/SKILL.md', 'commands/resume.md', 'commands
   .join('\n');
 const schema = {
   type: 'object', additionalProperties: false, required: ['decisions'],
-  properties: { decisions: { type: 'array', items: {
+  properties: { decisions: { type: 'array', minItems: fixtures.length, maxItems: fixtures.length, items: {
     type: 'object', additionalProperties: false,
     required: ['id', 'flag', 'action', 'stage', 'attempt', 'stateFields', 'reason'],
     properties: {
-      id: { type: 'string' }, flag: { type: 'string' },
+      id: { type: 'string', enum: fixtures.map(fixture => fixture.id) }, flag: { type: 'string' },
       action: { type: 'string', enum: actions }, stage: { type: ['string', 'null'] },
       attempt: { type: ['integer', 'null'] },
       stateFields: { type: 'array', items: { type: 'string' } }, reason: { type: 'string' },

@@ -38,4 +38,4 @@ Fixtures describe filesystem, task and Git snapshots. This suite tests prompt de
 node --test tests/owned-process.test.mjs
 ```
 
-They cover an owned orphan, a dead leader with a surviving child, PID reuse (refused, process left running), and an unrelated server on the recorded port (refused at start, never stopped). macOS and Linux only; they need `ps`, `pgrep`, and `lsof` on macOS.
+Each case asserts the real process state, not just the helper's exit code. They cover an owned server with a child; a command that died while its child changed directory; a launcher that exits at once but leaves a child (start keeps a record); a command that exits with nothing left (start fails, record `exited`); a supervisor killed while processes remain (`unverified`, exit 4, record kept, nothing touched); PID reuse (refused, process left running); an unrelated server on the recorded port (refused at start, never stopped); and a record write failure (start stops what it launched). macOS and Linux only; they need `ps`, `pgrep`, and `lsof` on macOS.

@@ -37,13 +37,19 @@ Show the full table (skill, source, action, target path). State that this writes
 Check and report. Install nothing yourself; give the command and let the user run it.
 - `node` and `npx` (`node --version`). Needed by the MCP servers and web builds.
 - Browser fallback for prototype captures, checker keyboard interactions, saved review evidence, and awwwards capture: identify a named real-browser tool and prove it works. A CLI version alone does not prove a module resolves or a browser launches. An awwwards-managed install does not make `import('playwright')` available to project scripts.
-- For project-local Playwright, run this probe from the project root with a 30-second command timeout. It installs nothing. Report module, launch, keyboard or screenshot errors separately:
+- For Playwright, run this probe from the app's working directory (the folder with its `package.json`, for example `site/`) with a 30-second command timeout. It installs nothing. By default it resolves `playwright` from that directory, the same way the app's own scripts would. Set `FASHION_PLAYWRIGHT=<absolute path to a playwright package>` only to prove a named global fallback (for example `$(npm root -g)/playwright`). It reports module, launch, keyboard or screenshot errors separately, and on success prints one JSON line, the runtime record:
   ```sh
   node --input-type=module <<'JS'
-  import { mkdtempSync, statSync, rmSync } from 'node:fs';
+  import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+  import { createRequire } from 'node:module';
   import { tmpdir } from 'node:os';
-  import { join } from 'node:path';
-  const { chromium } = await import('playwright');
+  import { dirname, join } from 'node:path';
+  const appDir = process.cwd();
+  const explicit = process.env.FASHION_PLAYWRIGHT;
+  const req = createRequire(join(appDir, 'fashion-probe.cjs'));
+  const modulePath = req.resolve(explicit || 'playwright');
+  const version = JSON.parse(readFileSync(explicit ? join(explicit, 'package.json') : req.resolve('playwright/package.json'), 'utf8')).version;
+  const { chromium } = req(modulePath);
   const browser = await chromium.launch({ timeout: 10000 });
   let evidence;
   try {
@@ -58,13 +64,20 @@ Check and report. Install nothing yourself; give the command and let the user ru
     const screenshot = join(evidence, 'probe.png');
     await page.screenshot({ path: screenshot });
     if (!statSync(screenshot).size) throw new Error('Screenshot file empty');
-    console.log('Playwright fallback ready: Chromium, viewport, Tab, Escape, saved screenshot');
+    console.log(JSON.stringify({
+      tool: 'playwright', kind: explicit ? 'global' : 'project', appDir, modulePath, version,
+      browser: `chromium ${browser.version()}`,
+      invocation: `const { chromium } = require('node:module').createRequire(${JSON.stringify(join(appDir, 'fashion-probe.cjs'))})(${JSON.stringify(modulePath)});`,
+      capabilities: ['launch', 'viewport', 'Tab', 'Escape', 'saved-screenshot'], probedAt: new Date().toISOString(),
+    }));
   } finally {
     try { await browser.close(); }
     finally { if (evidence) rmSync(evidence, { recursive: true }); }
   }
   JS
   ```
+- Project-resolved Playwright is the default. A global runtime counts only when it was named with `FASHION_PLAYWRIGHT` and this probe passed with it; a CLI version (`playwright --version`, `npx playwright --version`) never establishes readiness.
+- In a Fashion project, the router saves the probe's JSON line, keyed by `appDir`, in `.fashion/browser-runtime.json` (`{"runtimes": [ ... ]}`), and the probe's output under `tickets/<id>/evidence/` when it ran for a ticket. That record is what checkers, prototypers and critics must use. It is not ticket state; it never goes in `tickets/<id>/state.json`.
 - If the module is missing, suggest `npm install --save-dev playwright` in that project (adapt to its package manager). If the browser binary is missing, suggest `npx playwright install chromium` after the module is installed. Give commands only; do not install. For another real-browser tool, run equivalent capability checks through that tool. Record tool/runtime, working directory, capabilities and gaps. See the [Playwright library installation guide](https://playwright.dev/docs/library).
 - Setup outside a project reports machine capabilities only. Repeat the probe in the actual project before phase 3 prototypes and phase 4 checks. Report missing fallback early even when Responsively works, since keyboard or saved-file coverage may still need it.
 - Web builds: `git`.

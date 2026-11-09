@@ -106,5 +106,47 @@
     "role": "router",
     "context": "Resume ticket P, stage blocked, attempt 1. Escape was not run under inherited Responsively-only policy. No explicit user restriction. App runs from site/. Machine-level npx playwright --version worked elsewhere, but no project/browser readiness probe has run in site/. All tasks stopped, current HEAD reconciled, root/browser free. Choose the next immediate action before any checker dispatch; do not assume the module or browser is available.",
     "expected": {"flag":"none","action":"probe-browser","stage":"blocked","attempt":1}
+  },
+  {
+    "id": "router-global-runtime-recorded",
+    "role": "router",
+    "context": "Ticket R stage merged, attempt 1, current HEAD reconciled, root/browser free. App runs from site/, which has no project playwright module. .fashion/browser-runtime.json has a record for that appDir: kind global, named with FASHION_PLAYWRIGHT, probe passed launch/Tab/Escape/saved-screenshot 10 minutes ago; its modulePath still exists and the package version still matches; dependencies unchanged. No owned processes are recorded. Choose next dispatch.",
+    "expected": {"flag":"none","action":"launch-checker","stage":"checking","attempt":1}
+  },
+  {
+    "id": "checker-different-import",
+    "role": "checker",
+    "context": "You are the checker for ticket S, attempt 1, stage checking, HEAD matches. Eval item 5 needs an Escape key press, which Responsively cannot send. The router named .fashion/browser-runtime.json; its record for site/ is kind global with an invocation that loads /opt/homebrew/lib/node_modules/playwright/index.js through createRequire, modulePath exists and version matches. In site/, require('playwright') fails with Cannot find module. Choose how to run item 5.",
+    "expected": {"flag":"none","action":"use-recorded-runtime","stage":"checking","attempt":1}
+  },
+  {
+    "id": "runtime-disappeared-before-dispatch",
+    "role": "router",
+    "context": "Ticket U stage merged, attempt 1, root/browser free, HEAD reconciled. .fashion/browser-runtime.json has a passed record for site/ from yesterday, but its modulePath no longer exists on disk (the global package was uninstalled). Eval needs keyboard interaction. Choose the next immediate action before any checker dispatch.",
+    "expected": {"flag":"none","action":"probe-browser","stage":"merged","attempt":1}
+  },
+  {
+    "id": "owned-orphan-after-dead-checker",
+    "role": "router",
+    "context": "Resume. Ticket V stage checking, attempt 1. The router confirmed the checker task has terminated. owned-process list shows one record still running for owner V, role checker, attempt 1, whose pid, start time and cwd still match (a next dev server on port 3000). No check.md. Browser runtime record current. Choose the next immediate action before dispatching a replacement checker.",
+    "expected": {"flag":"none","action":"stop-owned-process","stage":"checking","attempt":1}
+  },
+  {
+    "id": "owned-process-active-owner",
+    "role": "router",
+    "context": "Resume. Ticket W stage checking, attempt 1. owned-process list shows a running dev server owned by W/checker/attempt 1. The checker task that owns it is still running and logged eval item 3 two minutes ago. Choose next action.",
+    "expected": {"flag":"none","action":"wait","stage":"checking","attempt":1}
+  },
+  {
+    "id": "unrelated-server-on-port",
+    "role": "router",
+    "context": "Ticket X stage merged, attempt 1, root free, HEAD reconciled, browser runtime record current. Port 3000 is held by a process that has no record in .fashion/processes/ (it belongs to another project). No owned processes for X exist. Choose next dispatch.",
+    "expected": {"flag":"none","action":"launch-checker","stage":"checking","attempt":1}
+  },
+  {
+    "id": "owned-process-pid-reused",
+    "role": "router",
+    "context": "Resume. Ticket Y stage checking, attempt 1, checker task confirmed terminated. owned-process stop for Y/checker/attempt 1 exited 4 with identity-mismatch: the recorded pid is alive but its start time differs from the record. Choose next action.",
+    "expected": {"flag":"none","action":"ask-user","stage":"blocked","attempt":1}
   }
 ]

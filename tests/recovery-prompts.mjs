@@ -8,7 +8,8 @@ import { spawnSync } from 'node:child_process';
 
 const fixtures = JSON.parse(readFileSync(new URL('./recovery-fixtures.json', import.meta.url), 'utf8'));
 const actions = ['wait', 'collect-result', 'collect-check', 'inspect-task', 'launch-builder',
-  'launch-checker', 'launch-reproducer', 'migrate-state', 'ask-user', 'report-missing-dependency', 'probe-browser'];
+  'launch-checker', 'launch-reproducer', 'migrate-state', 'ask-user', 'report-missing-dependency', 'probe-browser',
+  'use-recorded-runtime', 'stop-owned-process'];
 const stateKeys = ['stage', 'attempt', 'taskId', 'branch', 'worktree', 'builtCommit',
   'mergeCommit', 'checkedCommit', 'stageStartedAt', 'updatedAt'];
 const instructions = ['skills/fashion/SKILL.md', 'commands/resume.md', 'commands/setup.md',
@@ -32,9 +33,14 @@ const prompt = `Apply the shipped Fashion instructions to each independent fixtu
 This is a decision-only regression test: do not execute tools, spawn agents, or edit files.
 Each fixture has an explicit role. If role is "watchdog", classify the watchdog flag
 ("ok" if no flag is warranted) and recommend the router's next action.
-If role is "router", use flag "none", even when its context mentions a prior watchdog flag.
+If role is "router" or "checker", use flag "none", even when its context mentions a prior watchdog flag.
+For role "checker", answer as the checker agent; otherwise answer as the router.
 Never infer or change the fixture role from its context.
 Choose the next immediate action and resulting stage/implementation attempt.
+Action meanings: launch-* = the router dispatches that agent; probe-browser = the router runs the /fashion:setup probe;
+stop-owned-process = the router runs the owned-process stop helper; use-recorded-runtime = the checker loads the recorded browser runtime
+(checker role only); ask-user = stop and ask the user; wait = do nothing now.
+Return exactly one decision per fixture id, no more and no fewer.
 For collect-check, keep stage checking until the router compares evidence.
 For migrate-state, return all and only allowed state keys in stateFields; otherwise use [].
 Briefly explain each decision. Do not invent missing task inspection or user permission.
@@ -42,9 +48,9 @@ ${JSON.stringify(fixtures.map(({ expected, ...input }) => input))}`;
 
 assert.equal(new Set(fixtures.map(fixture => fixture.id)).size, fixtures.length);
 for (const fixture of fixtures) {
-  assert.ok(['watchdog', 'router'].includes(fixture.role), `Missing/invalid role: ${fixture.id}`);
+  assert.ok(['watchdog', 'router', 'checker'].includes(fixture.role), `Missing/invalid role: ${fixture.id}`);
   assert.ok(actions.includes(fixture.expected.action));
-  assert.equal(fixture.expected.flag === 'none', fixture.role === 'router', `Role/flag mismatch: ${fixture.id}`);
+  assert.equal(fixture.expected.flag === 'none', fixture.role !== 'watchdog', `Role/flag mismatch: ${fixture.id}`);
 }
 
 if (process.argv[2] === '--check') {

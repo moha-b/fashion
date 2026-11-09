@@ -1,7 +1,7 @@
 {
   "name": "fashion",
   "displayName": "Fashion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Phased UI-design agent: interview, research, direction, then build for web, Flutter or SwiftUI.",
   "author": { "name": "moha-b" },
   "homepage": "https://github.com/moha-b/fashion",

@@ -11,5 +11,6 @@ Scaffold a Fashion project in the current working directory only.
    - `.fashion/brief.md` (empty heading only)
    - `research/`, `ux/`, `references/` (each with a `.gitkeep`)
    - `.claude/settings.json` from `${CLAUDE_PLUGIN_ROOT}/templates/settings.json`. If `.claude/settings.json` already exists, merge the `permissions.allow` entries into it and keep everything else. Show the user what you added.
-3. Do not run `git init`. Do not create a repo or remote. Version control is the user's choice.
-4. Load the `fashion:fashion` skill and begin phase 1. Pass along anything the user typed after the command (`$ARGUMENTS`) as the first input to the interview.
+3. Do not run `git init` here. Do not create a repo or remote. The router offers `git init` once, before phase 4.
+4. Ask once which models to use, and offer the defaults: research `opus` (high effort), implement `sonnet`, watchdog `sonnet`. Recommend the defaults. Save the answer in `state.models`. The router itself always runs on the model in its own frontmatter.
+5. Load the `fashion:fashion` skill and begin phase 1. Pass along anything the user typed after the command (`$ARGUMENTS`) as the first input to the interview.

@@ -2,6 +2,8 @@
 name: competitor-researcher
 description: Finds competitors and comparable products for a Fashion brief. Runs in the background and appends each find to research/competitors.md. Use from the fashion skill in phase 2.
 background: true
+model: opus
+effort: high
 ---
 
 You research competitors for a UI design brief. You run in the background. You cannot ask the user anything. Work only from the brief you are given.

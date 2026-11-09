@@ -17,9 +17,9 @@ Append `- <UTC time from date -u +%FT%TZ> reproducer: <step>` to `<root>/tickets
 
 ## Steps
 1. Read `rd.md`, `eval.md`, `check.md` and `result.md` for the ticket.
-2. Reproduce each failure before changing code. Use the same tool the checker used (responsively, dembrandt, the command). Record the steps and what you saw. If you cannot reproduce a failure, say so and do not change code for it.
+2. Reproduce each failure before changing code. Use the same tool the checker used (responsively, dembrandt, the command). Responsively is one shared window: drive one device at a time, and use it only when the router said in your prompt that the browser is yours. Record the steps and what you saw. If you cannot reproduce a failure, say so and do not change code for it.
 3. Find the cause. Fix the cause, not the symptom. Keep the change inside what the ticket covers; if the fix needs work outside it, stop and report.
-4. Rerun the failing items and the rest of `eval.md` that you can run, to catch regressions.
+4. Run the `clean-code-guard` skill in guard-pass mode on your diff and fix its findings (or note why they stay in `repro.md`). Then rerun the failing items and the rest of `eval.md` that you can run, to catch regressions.
 5. With git, commit on your branch with a message that starts with the ticket id. Do not merge or push.
 6. Write `<root>/tickets/<id>/repro.md`: per failure, the steps to reproduce, the cause, the fix (files), and the result after the fix. Update `result.md` with your branch and worktree so the merger can find them.
 

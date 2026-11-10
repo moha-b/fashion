@@ -148,5 +148,23 @@
     "role": "router",
     "context": "Resume. Ticket Y stage checking, attempt 1, checker task confirmed terminated. owned-process stop for Y/checker/attempt 1 exited 4 with identity-mismatch: the recorded pid is alive but its start time differs from the record. Choose next action.",
     "expected": {"flag":"none","action":"ask-user","stage":"blocked","attempt":1}
+  },
+  {
+    "id": "screen-home-tickets-done",
+    "role": "router",
+    "context": "Phase 4. state.screens: home building (current), product planned, cart planned. Every home ticket is done with its check compared. The visual critic has not reviewed home yet. No tasks active. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"launch-visual-critic","stage":null,"attempt":null}
+  },
+  {
+    "id": "screen-review-no-changes",
+    "role": "router",
+    "context": "Phase 4. home is in review; the critic reviewed it and the user was asked 'Any changes to Home? If none, I'll mark it accepted and start Product.' The user answered: 'no changes, looks good'. Product has no tickets yet. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ticket-next-screen","stage":null,"attempt":null}
+  },
+  {
+    "id": "screen-other-screen-ticket-ready",
+    "role": "router",
+    "context": "Phase 4. currentScreen is home (building). Home tickets T03 and T04 are building with active tasks; no home ticket is ready. A ticket T07 for the product screen is stage ready (left over from an earlier draft) and its blocked-by are done. maxWorkers 3, a worker slot is free. Choose the next immediate action for T07.",
+    "expected": {"flag":"none","action":"wait","stage":"ready","attempt":0}
   }
 ]

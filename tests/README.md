@@ -39,3 +39,14 @@ node --test tests/owned-process.test.mjs
 ```
 
 Each case asserts the real process state, not just the helper's exit code. They cover an owned server with a child; a command that died while its child changed directory; a launcher that exits at once but leaves a child (start keeps a record); a command that exits with nothing left (start fails, record `exited`); a supervisor killed while processes remain (`unverified`, exit 4, record kept, nothing touched); PID reuse (refused, process left running); an unrelated server on the recorded port (refused at start, never stopped); a record write failure (start stops what it launched); and a supervisor killed inside the startup window (start exits 4 `unverified`, the record stays `running`, `stop` refuses, the command is left alive). macOS and Linux only; they need `ps`, `pgrep`, and `lsof` on macOS.
+
+## Usage collector
+
+`bench/collect-usage.mjs` is tested on synthetic transcripts:
+
+```sh
+node --test tests/collect-usage.test.mjs
+```
+
+The tests check that one API request written as several transcript lines is counted once, that subagent usage is attributed through `.meta.json`, and that session and time filters work. They check that human wait time ignores skill text, task notifications and tool results. And they check that cost stays `unknown` (never 0) unless every model has a full price.
+

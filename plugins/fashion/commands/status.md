@@ -16,5 +16,6 @@ Read-only. Change nothing.
    - Research: number of competitors found, researcher and analyst done or not
    - Models per role: router (from the `fashion:router` agent: opus, high effort), research, implement and watchdog (from `state.models`; say "default" when a key is missing, with the default value: research opus, implement sonnet, watchdog sonnet)
    - Git: yes, no or not asked yet (`state.git`)
+   - Screens (phase 4): each screen in order with its status, and which one is current
    - Tickets (phase 4): count per status (`draft`, `ready`, `in-progress`, `done`), and each `in-progress` ticket with its start time
 4. Suggest the next step in one line.

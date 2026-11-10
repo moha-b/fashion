@@ -33,13 +33,16 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
   "postedCompetitors": 0,
   "models": { "research": "opus", "implement": "sonnet", "watchdog": "sonnet" },
   "git": null,
-  "maxWorkers": 3
+  "maxWorkers": 3,
+  "screens": [],
+  "currentScreen": null
 }
 ```
 - `platform` is `web` or `mobile`. `mobileStack` is `flutter` or `swiftui`. `references` lists saved reference slugs. `postedCompetitors` counts entries already shown to the user.
 - `models` picks the model per role. Values are `opus`, `sonnet`, `haiku` or `fable`. A missing key means the default above.
 - `git` is `null` (not asked yet), `true` (the folder is a git repo and phase 4 uses worktrees) or `false` (the user declined; workers run one at a time in the folder).
-- `maxWorkers` caps how many build workers run at once.
+- `maxWorkers` caps how many build workers run at once (within the current screen).
+- `screens` is the ordered build list for phase 4: `{"id": "home", "title": "Home", "status": "planned" | "building" | "critique" | "review" | "accepted", "commit": null, "criticTask": null, "review": null, "round": 0}`. `commit` is the code the screen was last critiqued at (`"no git"` without Git), `criticTask` the running critic's task ID, `review` the path of the completed review for that commit, `round` the review count. `currentScreen` is the id being built or reviewed. See "4.3 Screen by screen".
 
 ## Models per role
 | Role | Agents | Default | Set by |
@@ -108,8 +111,20 @@ Before any ticket, write `ux/components.md` from `ux/decisions.md`, `ux/design-s
 ```
 Check every new component against what exists. If it would repeat the markup or styling of an existing one (a second drawer, a second card, a second modal), that is the second use: add the shared primitive (for example `Drawer`) to the list, and plan its extraction, with the existing component moved onto it, before the new component. Show it and get a yes. Tickets and workers follow it. Anything new is added to it first (by you, before the ticket that needs it). If the product already has a codebase with its own component library, list what exists and mark the list "existing conventions win".
 
-### 4.3 Tickets
-Run the `fashion:ticket` skill. It writes `tickets/<id>/rd.md`, `tickets/<id>/eval.md` and `tickets/board.md`, all as `draft`. Each ticket names the components it creates or reuses from `ux/components.md`. Show the board. Tell the user to mark the tickets they want built as `ready` (they can say "all ready" and you update the board). Only `ready` tickets are assigned.
+### 4.3 Screen by screen
+Build one screen at a time, and let the user see each finished screen before the next one starts.
+1. With the components list (4.2), write the screen order in `state.screens` from the primary journey in the brief and `ux/decisions.md`. Home comes first; if the product has no home screen, the journey's entry screen does. Show the order with the components list and get one yes for both.
+2. Set the first screen `building` and `currentScreen` to its id. Ticket only that screen (4.3.1). Foundation tickets (scaffold, tokens, primitives, extractions) belong to the first screen.
+3. Assign and check its tickets as in 4.4. Workers may run in parallel within the screen; never start tickets for another screen.
+4. When every ticket of the screen is `done`: increment `round`, record the current commit in `commit`, set the screen `critique`, launch `fashion:visual-critic` for that screen, round and commit at desktop and phone against the accepted baseline, and save its task ID in `criticTask` at once.
+5. When the critic returns, check that `ux/visual-review-<screen>-<round>.md` exists and names that commit. Then set the screen's `status` to `review`, set its `review` field to that path, and clear `criticTask`. Only now show the user the URL to open, the screenshot paths, and the critic's findings (up to three), and ask one question: "Any changes to <screen>? If none, I'll mark it accepted and start <next screen>." Never ask that question for a screen that is not `review`, or whose review names an older commit than the code now on main.
+6. Changes: set the screen back to `building` and handle them as revisions of this screen (see Close for who does what: a reopened ticket and a `fashion:reproducer` attempt within its scope, or a draft ticket for new scope that the user marks ready). Return to step 4 when they are done; the next round reviews the new commit.
+7. No changes: set the screen `accepted` and record it in `ux/decisions.md`. That answer also authorizes the next screen: set it `building`, ticket it, mark its tickets `ready` (the question said so), show the board in one line, and assign. When no screen is left, go to Close.
+
+A restart never skips the critic. On resume: `building` continues the screen's tickets (step 4 once all are done). `critique` with a live critic waits for it; with a terminated critic it collects a matching review (step 5) or launches a new critic for the same round and commit, never asking the user. `review` asks the question again only when its review file exists and names the code now on main (current HEAD, or `no git` with no changes since); if the code moved or the file is missing, it goes back to step 4.
+
+### 4.3.1 Tickets
+Run the `fashion:ticket` skill for the current screen only. It writes `tickets/<id>/rd.md`, `tickets/<id>/eval.md` and `tickets/board.md`, all as `draft`. Each ticket names the components it creates or reuses from `ux/components.md`. Show the board. Tell the user to mark the tickets they want built as `ready` (they can say "all ready" and you update the board). Only `ready` tickets are assigned.
 
 ### Per-ticket state and recovery
 The router owns `tickets/<id>/state.json`; `board.md` is a human-readable view, not the source of truth. Create state before launch:
@@ -140,7 +155,7 @@ Cleanup after a dead worker belongs to the router. Only after confirming the own
 
 ### 4.4 Assign
 Loop until no `ready` or `in-progress` ticket is left:
-1. Pick tickets with stage `ready` whose `blocked-by` are all `done`. With `git: true`, take up to `maxWorkers` at once; with `git: false`, one at a time.
+1. Pick tickets of `currentScreen` with stage `ready` whose `blocked-by` are all `done`. With `git: true`, take up to `maxWorkers` at once; with `git: false`, one at a time.
 2. Commit any changed planning and prototype files first (`git: true`), so the worktrees see the latest tickets and accepted visual baseline.
 3. Set each state to `building` with incremented attempt and update the board to `in-progress`, with the time.
 4. Launch the worker in the background:
@@ -160,7 +175,7 @@ When a builder returns (merges and checks share the project root, so run one mer
 7. Bugs the checker found that are outside the ticket (including bugs that were there before): add a `draft` ticket `bug-<n>` for each, and mention them to the user.
 
 ### 4.5 When to ask the user
-Only when there is a choice to make: marking tickets ready, a merge conflict the merger could not resolve, a ticket that failed twice, a stuck worker the watchdog flagged twice, a process the owned-process helper refused to stop (exit 4), scope or design questions a worker raised in `result.md`. Batch these into one short message.
+Only when there is a choice to make: the review of each finished screen (4.3 step 5), marking tickets ready, a merge conflict the merger could not resolve, a ticket that failed twice, a stuck worker the watchdog flagged twice, a process the owned-process helper refused to stop (exit 4), scope or design questions a worker raised in `result.md`. Batch these into one short message.
 
 ### 4.6 Watchdog
 While any ticket is `in-progress`, run `fashion:watchdog` (watchdog model) every 10 minutes:
@@ -205,7 +220,7 @@ Every worker follows these. The router names them in each builder's prompt, beca
 - Mobile: the web design skills do not apply. If the user wants store screenshots, use `app-store-screenshots` if installed.
 
 ### Close
-When every ticket the user marked `ready` is `done`, run `fashion:visual-critic` on the complete primary user journey against the accepted visual baseline, including responsive behavior and brand fit. Serialize its browser access with other reviewers. Preserve each review as `ux/visual-review-final-<round>.md`, with screenshots under `ux/evidence/final-<round>/`; keep `ux/visual-review-final.md` as the current summary. `not reviewed` is a blocker, not approval.
+When every screen is `accepted`, run `fashion:visual-critic` on the complete primary user journey against the accepted visual baseline, including responsive behavior and brand fit. Serialize its browser access with other reviewers. Preserve each review as `ux/visual-review-final-<round>.md`, with screenshots under `ux/evidence/final-<round>/`; keep `ux/visual-review-final.md` as the current summary. `not reviewed` is a blocker, not approval.
 
 The router owns revision routing, never app edits. For an observed failure within an already authorized ticket, reopen that ticket, add concrete critic findings and before/after evidence requirements to `rd.md`/`eval.md`, and dispatch `fashion:reproducer` as a new attempt with the review and archived evidence paths. Reuse the normal merge/check loop and two-failed-round limit. If a revision changes scope or design, create a draft ticket and ask the user to mark it ready before assigning a builder. Keep each finding linked to its owner ticket or an explicit user-accepted deferral.
 

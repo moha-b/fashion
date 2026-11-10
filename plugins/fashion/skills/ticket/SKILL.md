@@ -10,8 +10,8 @@ Split the build into tickets a worker can finish alone, in its own context.
 `.fashion/brief.md`, `.fashion/state.json`, `ux/decisions.md`, `ux/components.md` (written and confirmed in phase 4.2; stop and ask the router for it if missing), `references/*/notes.md`, and `tickets/board.md` if tickets already exist. Never overwrite an existing ticket; add new ones and append to the board.
 
 ## Split
-1. One ticket per screen, page section or feature named in `ux/decisions.md`. A ticket should take one worker well under an hour. Split anything bigger.
-2. Add foundation tickets first, and make the others depend on them:
+1. Ticket only the screen the router names (`currentScreen` in `.fashion/state.json`); other screens get their tickets when their turn comes. One ticket per section or feature of that screen named in `ux/decisions.md`. A ticket should take one worker well under an hour. Split anything bigger.
+2. For the first screen only, add foundation tickets first, and make the others depend on them:
    - `T00-scaffold`: create the app for the platform in the brief (see the platform notes in the `fashion:fashion` skill). Mode `solo`.
    - `T01-tokens`: colour, type, spacing, radius, shadow and motion tokens in one place, from the Tokens part of `ux/components.md`. Blocked by `T00-scaffold`.
    - `T02-primitives`: the primitives in `ux/components.md`, each with its variants as props. Blocked by `T01-tokens`. Split it if the list is long.
@@ -54,11 +54,11 @@ A numbered list. Each item is one check with a clear pass condition that the che
 # Board
 Status: draft → ready (set by the user) → in-progress → done
 
-| id | title | status | mode | blocked-by | started | updated |
-|---|---|---|---|---|---|---|
-| T00-scaffold | Scaffold the app | draft | solo | — | | |
+| id | screen | title | status | mode | blocked-by | started | updated |
+|---|---|---|---|---|---|---|---|
+| T00-scaffold | home | Scaffold the app | draft | solo | — | | |
 ```
-New tickets start as `draft`. Only the user moves a ticket to `ready` (they may tell the router, which updates the board). The router sets `in-progress` and `done`.
+New tickets start as `draft`. Only the user moves a ticket to `ready` (they may tell the router, which updates the board). The one standing authorization: when the user answers a screen review with no changes, that answer marks the next screen's tickets `ready` (the router's question says so). The router sets `in-progress` and `done`.
 The router also creates `tickets/<id>/state.json` at stage `draft` using the schema in the Fashion skill. It is the source of truth for stage, attempt, task and commit; the board summarizes it. When the user marks a ticket ready, update both state and board.
 
 ## Return

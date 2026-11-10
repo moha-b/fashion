@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 const fixtures = JSON.parse(readFileSync(new URL('./recovery-fixtures.json', import.meta.url), 'utf8'));
 const actions = ['wait', 'collect-result', 'collect-check', 'inspect-task', 'launch-builder',
   'launch-checker', 'launch-reproducer', 'migrate-state', 'ask-user', 'report-missing-dependency', 'probe-browser',
-  'use-recorded-runtime', 'stop-owned-process'];
+  'use-recorded-runtime', 'stop-owned-process', 'launch-visual-critic', 'ticket-next-screen'];
 const stateKeys = ['stage', 'attempt', 'taskId', 'branch', 'worktree', 'builtCommit',
   'mergeCommit', 'checkedCommit', 'stageStartedAt', 'updatedAt'];
 const instructions = ['skills/fashion/SKILL.md', 'commands/resume.md', 'commands/setup.md',
@@ -39,7 +39,9 @@ Never infer or change the fixture role from its context.
 Choose the next immediate action and resulting stage/implementation attempt.
 Action meanings: launch-* = the router dispatches that agent; probe-browser = the router runs the /fashion:setup probe;
 stop-owned-process = the router runs the owned-process stop helper; use-recorded-runtime = the checker loads the recorded browser runtime
-(checker role only); ask-user = stop and ask the user; wait = do nothing now.
+(checker role only); launch-visual-critic = the router dispatches the visual critic;
+ticket-next-screen = the router writes tickets for the next screen; ask-user = stop and ask the user; wait = do nothing now.
+For decisions about a screen rather than one ticket, use stage null and attempt null.
 Return exactly one decision per fixture id, no more and no fewer.
 For collect-check, keep stage checking until the router compares evidence.
 For migrate-state, return all and only allowed state keys in stateFields; otherwise use [].

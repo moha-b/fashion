@@ -6,11 +6,14 @@
       "mcp__plugin_fashion_inspo",
       "mcp__plugin_fashion_awwwards",
       "mcp__plugin_fashion_dembrandt",
-      "mcp__plugin_fashion_responsively",
       "mcp__inspo",
       "mcp__awwwards",
       "mcp__dembrandt",
-      "mcp__responsively"
+      "mcp__stitch__list_projects",
+      "mcp__stitch__get_project",
+      "mcp__stitch__list_screens",
+      "mcp__stitch__get_screen",
+      "mcp__stitch__list_design_systems"
     ]
   }
 }

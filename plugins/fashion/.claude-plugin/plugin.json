@@ -2,10 +2,10 @@
   "name": "fashion",
   "displayName": "Fashion",
   "version": "0.5.0",
-  "description": "Phased UI-design agent: interview, research, direction, then build for web, Flutter or SwiftUI.",
+  "description": "Design-only UI agent: brief, focused research, direction and screen design in Google Stitch (or Figma), then a reviewed design handoff. Writes no application code.",
   "author": { "name": "moha-b" },
   "homepage": "https://github.com/moha-b/fashion",
   "repository": "https://github.com/moha-b/fashion",
   "license": "MIT",
-  "keywords": ["design", "ui", "research", "nextjs", "flutter", "swiftui"]
+  "keywords": ["design", "ui", "research", "stitch", "figma", "handoff"]
 }

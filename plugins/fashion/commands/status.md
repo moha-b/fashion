@@ -1,21 +1,21 @@
 ---
-description: Show the phase, open questions and saved references of the current Fashion project.
+description: Show the phase, design backend, screens and open questions of the current Fashion project.
 disable-model-invocation: true
 ---
 
-Read-only. Change nothing.
+Read-only. Change nothing, and make no design-tool calls.
 
 1. If `.fashion/state.json` is missing, say there is no Fashion project here and point to `/fashion:start`.
-2. Read `.fashion/state.json`, `tickets/board.md` (if present), and list the files in `research/`, `ux/` and `references/`.
-3. Print:
-   - Phase (1 interview, 2 research, 3 direction, 4 build) and loop count
-   - Platform, mobile stack, site type (`landing` or `multi`) and the user's site URL
-   - Decisions made (one line each)
-   - Open questions
-   - Saved references (slug, and whether `notes.md` exists)
-   - Research: number of competitors found, researcher and analyst done or not
-   - Models per role: router (from the `fashion:router` agent: opus, high effort), research, implement and watchdog (from `state.models`; say "default" when a key is missing, with the default value: research opus, implement sonnet, watchdog sonnet)
-   - Git: yes, no or not asked yet (`state.git`)
-   - Screens (phase 4): each screen in order with its status, and which one is current
-   - Tickets (phase 4): count per status (`draft`, `ready`, `in-progress`, `done`), and each `in-progress` ticket with its start time
-4. Suggest the next step in one line.
+2. Read `.fashion/state.json`. If it has no `schema` field, say it is a project from the retired build workflow, show its old `phase`, and say `/fashion:resume` migrates it without building anything. Stop.
+3. List the files in `research/`, `ux/`, `references/` and `handoff/`.
+4. Print:
+   - Phase and which of the four gates are approved
+   - Platform (and mobile OS), site type (`landing` or `multi`) and the user's site URL
+   - Design backend: tool, status and when it was checked, the Stitch project or Figma file, the design system
+   - Research: status, number of competitors in `research/competitors.md`, saved references (slug, and whether `notes.md` exists)
+   - Direction: round, candidates, the chosen one
+   - Screens: each with its states, frames generated and exported, and status
+   - Decisions (one line each) and open questions
+   - Models per role: router (from the `fashion:router` agent: opus, high effort), research and critic (from `state.models`; say "default" when a key is missing: research opus, critic sonnet)
+   - Legacy, when `legacy` is set: migrated from which phase and when, the archive path, the legacy folders left untouched, and the tickets that were in flight and not resumed
+5. Suggest the next step in one line.

@@ -15,17 +15,15 @@ A criterion without evidence is `not run`, never `pass`.
 - Date:
 - Manifest entry:
 
-## Prototype gate (#8 section 1)
+## Direction (#8 section 1, design-only)
 | # | Criterion | Where to look | Evidence | Verdict |
 |---|---|---|---|---|
-| 1.1 | Direction approval includes rendered alternatives and an explanation of their tradeoffs. | `prototypes/review.md`, `prototypes/evidence/`, the router's direction message | | |
-| 1.2 | The selected direction has a reviewed representative screen on desktop and mobile. | `ux/visual-review.md`, screenshots at 1440×900 and 390×844 | | |
-| 1.3 | Component planning and broad implementation begin only after that visual baseline is accepted, unless the user explicitly waives this step. | time of the baseline yes in `ux/decisions.md` vs first `ux/components.md` write and first ticket | | |
-| 1.4 | A simple prototype path does not require the full delivery workflow before visual validation. | no tickets, worktrees or merges before the baseline yes | | |
-| 1.5 | One owner maintains visual coherence during initial exploration. | one prototyper task for the prototype; first screen built before any parallel screen | | |
-| 1.6 | Each defining effect has a stated purpose and feasible asset plan. | `ux/decisions.md`, `ux/directions.md` | | |
-| 1.7 | Critical assets are available, or an explicit fallback is accepted before broad implementation. | brief assets list, fallback decision in `ux/decisions.md` | | |
-| 1.8 | High-risk effects are checked on the target mobile experience, including an appropriate reduced-motion fallback. | prototype or check evidence at 390×844 with reduced motion | | |
+| 1.1 | Direction approval shows two or three design-tool alternatives with their tradeoffs. | `ux/evidence/direction-<round>/`, `state.direction`, the router's direction message | | |
+| 1.2 | The chosen direction exists in the design tool and has an exported preview. | `state.direction.chosen`, its `toolRef` and export | | |
+| 1.3 | No application or provider-generated code was written, downloaded or reviewed. | project tree (no code files), transcript (no HTML downloads) | | |
+| 1.4 | When a backend was unavailable, the run stopped with exact setup instead of falling back. | transcript, `state.backend.status` | | |
+| 1.5 | Each defining effect has a stated purpose and is specified in `ux/interactions.md`, not claimed as tested. | `ux/decisions.md`, `ux/interactions.md` | | |
+| 1.6 | Critical assets are available, or placeholders are marked and listed as open questions. | brief assets list, `handoff/decisions.md` | | |
 
 ## Research contract (#8 section 2)
 | # | Criterion | Where to look | Evidence | Verdict |
@@ -35,15 +33,15 @@ A criterion without evidence is `not run`, never `pass`.
 | 2.3 | Direction recommendations preserve material uncertainty instead of silently upgrading it to fact. | `ux/directions.md` uncertainty per direction | | |
 | 2.4 | Research includes relevant user journeys and explains what each observation means for this product. | Journey notes | | |
 
-## Build and visual review (#8 section 3)
+## Design review and handoff (#8 section 3, design-only)
 | # | Criterion | Where to look | Evidence | Verdict |
 |---|---|---|---|---|
-| 3.1 | Visual review explicitly covers hierarchy, composition, typography, imagery, brand fit, and responsive behavior. | `ux/visual-review*.md` | | |
-| 3.2 | Findings identify observable problems and actionable changes, not generic praise or unsupported scores. | same | | |
-| 3.3 | Before/after evidence is retained and unresolved findings are recorded. | `ux/evidence/final-<round>/`, ticket `history/` | | |
-| 3.4 | Final review tests the complete primary user journey, not only isolated tickets. | `ux/visual-review-final-<round>.md` | | |
-| 3.5 | Parallel work begins with a rendered baseline, stable shared components, and clear ownership. | board and screen order: screen 1 accepted before screen 2 tickets; `ux/components.md` | | |
-| 3.6 | Screens are built one at a time, home first, and the next starts only after the user's review of the previous one. | `.fashion/state.json` `screens`, ticket creation times, the review questions | | |
+| 3.1 | Visual review covers hierarchy, composition, typography, imagery, brand fit and form factors, from exported images. | `ux/visual-review-*.md` | | |
+| 3.2 | Findings name observable problems and concrete edits, not generic praise or unsupported scores. | same | | |
+| 3.3 | Screens share the design system; drift was fixed or recorded. | exports, `ux/design-system.md` | | |
+| 3.4 | Every approved screen and relevant state has a tool reference and an export at each form factor. | `state.screens`, `handoff/README.md`, `handoff/exports/` | | |
+| 3.5 | The handoff decision record is concise and includes rejected options and open questions. | `handoff/decisions.md` | | |
+| 3.6 | Approvals came from the person running the run, at the four gates only. | transcript, `state.approvals` | | |
 
 ## Measurement (#8 section 4, comparison runs only)
 | # | Criterion | Where to look | Evidence | Verdict |

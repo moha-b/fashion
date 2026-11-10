@@ -11,10 +11,6 @@
     "dembrandt": {
       "command": "npx",
       "args": ["-y", "dembrandt@0.39.2", "mcp"]
-    },
-    "responsively": {
-      "command": "npx",
-      "args": ["-y", "@responsively/mcp@1.0.0"]
     }
   }
 }

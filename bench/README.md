@@ -12,7 +12,7 @@ Tools and protocol for #8: run the design-validation workflow live, then measure
 
 One fresh **web** brief through phases 1–4 and the final review. The goal is to show the workflow runs and to audit real research behaviour. A pilot proves nothing about quality against the old flow, and nothing about native mobile.
 
-- **Inputs:** before the run, freeze the brief, realistic images and copy, and any reference URLs in `bench/briefs/<id>/`. Define the journey (for example home, then product detail with options, then cart) and the one defining interaction.
+- **Inputs:** the plugin is not tied to one product. A pilot brief is a website URL plus what the owner wants. Images and copy come from that site (phase 1 collects them into `references/own-site/` once the owner confirms the rights). Freeze the URL, the owner's goals and the collected `references/own-site/` in `bench/briefs/<id>/` so repeated runs use the same inputs. Note the site type: a landing page is one screen; a multi-screen site starts with home and the owner picks each next screen. Define the one defining interaction.
 - **Viewports:** phone 390×844 and desktop 1440×900, for every screenshot and judgement.
 - **Approvals:** real ones only. The person running the pilot answers every phase question themselves. Agent-generated approval does not count.
 - **Build order:** one screen at a time, home first. Each finished screen is reviewed before the next one starts (skill section 4.3).

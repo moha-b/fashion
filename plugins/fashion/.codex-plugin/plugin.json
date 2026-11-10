@@ -1,0 +1,18 @@
+{
+  "name": "fashion",
+  "version": "0.5.0",
+  "description": "Research, prototype and build a website or app with reviewed screens and resumable tickets.",
+  "author": { "name": "moha-b" },
+  "homepage": "https://github.com/moha-b/fashion",
+  "repository": "https://github.com/moha-b/fashion",
+  "license": "MIT",
+  "requires_local_executor": true,
+  "skills": "./codex/skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./codex/hooks.json",
+  "interface": {
+    "displayName": "Fashion",
+    "shortDescription": "Research, prototype and build reviewed UI",
+    "defaultPrompt": ["Use $fashion:fashion to start a design project."]
+  }
+}

@@ -9,7 +9,7 @@ Read-only. Change nothing.
 2. Read `.fashion/state.json`, `tickets/board.md` (if present), and list the files in `research/`, `ux/` and `references/`.
 3. Print:
    - Phase (1 interview, 2 research, 3 direction, 4 build) and loop count
-   - Platform and mobile stack
+   - Platform, mobile stack, site type (`landing` or `multi`) and the user's site URL
    - Decisions made (one line each)
    - Open questions
    - Saved references (slug, and whether `notes.md` exists)

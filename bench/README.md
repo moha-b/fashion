@@ -2,7 +2,7 @@
 
 Tools and protocol for #8: run the design-validation workflow live, then measure it against the old flow. Nothing in this folder ships with the plugin.
 
-> **0.5.0 note.** Fashion is now design-only: it ends in approved design-tool artifacts, not an app. The pilot protocol below was written for the 0.4 build workflow. For 0.5 runs the phases are brief, research, direction, design and handoff, and the checklist's direction and design rows apply. A 0.4 versus 0.5 comparison compares different deliverables, so it cannot by itself support a claim that 0.5 saves time or tokens; compare equal-scope runs (same brief, through approved designs) before claiming savings.
+> **0.6.0 note.** Fashion is now design-only: it ends in approved design-tool artifacts, not an app. The pilot protocol below was written for the build workflow (0.5 and earlier). For 0.6 runs the phases are brief, research, direction, design and handoff, and the checklist's direction and design rows apply. A build-workflow versus 0.6 comparison compares different deliverables, so it cannot by itself support a claim that 0.6 saves time or tokens; compare equal-scope runs (same brief, through approved designs) before claiming savings.
 
 | File | Purpose |
 |---|---|

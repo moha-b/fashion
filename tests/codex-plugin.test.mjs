@@ -52,10 +52,10 @@ test('Codex discovers its entry skill and MCP servers without Claude hooks', {
   const marketplace = fileURLToPath(new URL('../.agents/plugins/marketplace.json', import.meta.url));
   const plugin = await readPlugin(marketplace);
   assert.equal(plugin.summary.id, 'fashion@fashion');
-  assert.equal(plugin.summary.localVersion, '0.5.0');
+  assert.equal(plugin.summary.localVersion, '0.6.0');
   assert.equal(plugin.summary.availability, 'AVAILABLE');
   assert.deepEqual(plugin.skills.map((skill) => skill.name), ['fashion:fashion']);
   assert.ok(plugin.skills[0].path.endsWith('/codex/skills/fashion/SKILL.md'));
-  assert.deepEqual(plugin.mcpServers.sort(), ['awwwards', 'dembrandt', 'inspo', 'responsively']);
+  assert.deepEqual(plugin.mcpServers.sort(), ['awwwards', 'dembrandt', 'inspo']);
   assert.deepEqual(plugin.hooks, []);
 });

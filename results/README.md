@@ -5,7 +5,7 @@ One folder per project. Each project folder holds everything for that project:
 ```
 results/<project>/
   .claude/settings.json   tool permissions used for this project
-  .fashion/               brief.md, state.json, migration.md (projects moved from 0.4)
+  .fashion/               brief.md, state.json, migration.md (projects moved from the build workflow)
   research/               competitors.md
   ux/                     design-systems.md, directions.md, decisions.md, design-system.md, interactions.md, visual reviews
   ux/evidence/            exported previews per direction and design round
@@ -13,7 +13,7 @@ results/<project>/
   handoff/                README.md (links), exports/, decisions.md, design-system.md, interactions.md
 ```
 
-Projects run with plugin 0.4 or earlier also hold `designs/` (code prototypes), `tests/` and `tickets/`. Keep them as they were.
+Projects run with plugin 0.5 or earlier also hold `designs/` (code prototypes), `tests/` and `tickets/`. Keep them as they were.
 
 ## Test files
 Every test or check gets its own file. Nothing is overwritten.

@@ -19,7 +19,7 @@ The plugin bundles inspo (remote HTTP), awwwards and dembrandt (both run with `n
 If `~/.agents/skills/grill-me/SKILL.md` only says to call the Skill tool with `grilling`, offer once to repoint that line to `fashion:grilling`. Change only that line, and only after a yes.
 
 ## 4. Retired build skills
-Fashion 0.4 and earlier installed `scrollcraft`, `bang-motion`, `design-taste-frontend`, `hallmark`, `app-store-screenshots`, `brag-slim` and `clean-code-guard` into `~/.agents/skills/` for building apps. Fashion no longer uses them. Do not remove them; if they are present, say the user may remove them if nothing else uses them.
+Fashion 0.5 and earlier installed `scrollcraft`, `bang-motion`, `design-taste-frontend`, `hallmark`, `app-store-screenshots`, `brag-slim` and `clean-code-guard` into `~/.agents/skills/` for building apps. Fashion no longer uses them. Do not remove them; if they are present, say the user may remove them if nothing else uses them.
 
 ## 5. Report
 One short table: item, status, what the user should do. Then: run `/fashion:start` in the product's folder, or `/fashion:resume` in an existing project. A new session is needed after adding an MCP server.

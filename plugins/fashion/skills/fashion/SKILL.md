@@ -8,7 +8,7 @@ Five phases: `brief`, `research`, `direction`, `design`, `handoff`, then `done`.
 
 Fashion is finished when the user has approved design artifacts in a design tool: screens and their relevant states, links to them, exported previews, the design system, interaction specifications and a short record of decisions. A working application is never a deliverable.
 
-The `fashion:router` agent (the plugin's default main agent) runs this playbook and makes every design-tool call itself. It delegates only two bounded jobs: research (`fashion:researcher`, once per brief) and independent critique (`fashion:visual-critic`, once per review round). Under another agent the same rules apply.
+The `fashion:router` agent (the plugin's default main agent) runs this playbook and makes every design-tool call itself. It delegates only two bounded jobs: research (`fashion:researcher`, once per brief) and independent critique (`fashion:visual-critic`, once per review round). Under another agent the same rules apply. In Codex, enter through `codex/skills/fashion/SKILL.md` and apply `codex/runtime.md` to host-specific instructions; the current chat acts as the router.
 
 ## Rules
 - **No application code.** Never scaffold, write, install, build, run or test an app, in any phase. Never write HTML, CSS, JavaScript, TypeScript, Dart, Swift or similar files. Directions and prototypes are design-tool screens (or the design tool's own prototype links), not code.
@@ -97,12 +97,12 @@ Offer the other backend only as a choice for the user, never as an automatic swi
 | research | `fashion:researcher` | opus, high effort | `state.models.research` |
 | critic | `fashion:visual-critic` | sonnet | `state.models.critic` |
 
-Pass the role's model from `state.models` as the Agent tool's `model`; fall back to the default when the key is missing.
+Pass the role's model from `state.models` as the Agent tool's `model`; fall back to the default when the key is missing or is `inherit` (a Codex-created project). Codex follows the model rules in `codex/runtime.md` instead.
 
 ## Phase: brief
 1. Read what the user gave: URL, screenshots, decks, files in the folder. Never ask what you can find.
 2. Ask only questions whose answer changes the design. Run `fashion:grilling` when key facts are missing. Usually these are: audience and primary task; web or mobile (for mobile: iOS, Android or both); landing page or multi-screen; brand constraints; whether editable Figma components are required (this sets `backend.tool`). Give a recommended answer with each. Never ask about frameworks, hosting, code or build tooling.
-3. Own site. If the user gave the URL of their current site, ask once, in the same batch, whether its images and copy may be reused; they must own them or hold the rights. On yes, record `siteUrl`, capture its key pages with awwwards `capture_live_site` into `references/own-site/`, and write `references/own-site/sources.md` (file, source URL, page). Only these images may become product assets; any other site is a reference only. On no, list missing images and copy as open questions; designs use clearly marked placeholders.
+3. Own site and assets. Record an explicitly identified own-site URL as `siteUrl`, independently of reuse permission. If the user gave their current site, ask once, in the same batch, whether its images and copy may be reused; they must own them or hold the rights. On yes, capture its key pages with awwwards `capture_live_site` into `references/own-site/` and write `references/own-site/sources.md` (file, source URL, page). Files the user supplies and other owned or licensed assets they approve may also be used; record their source and approval. Any other site is a reference only. List the remaining gaps as open questions; designs use clearly marked placeholders.
 4. Check the backend now (see "Design backend") so setup can happen while research runs.
 5. Write `.fashion/brief.md`: product, audience, market, tone, platform, site type, site URL, primary task, success criteria, constraints, assets, design backend, open questions.
 6. Gate 1: show the brief. On yes set `approvals.brief` and phase `research`.

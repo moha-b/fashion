@@ -13,11 +13,11 @@ const project = (name) => { const dir = path.join(root, name); mkdirSync(dir); r
 test('start creates the shared state contract with inherited models and no host config or Git repo', () => {
   const dir = project('new project');
   initProject(dir);
-  assert.deepEqual(readdirSync(dir).sort(), ['.fashion', 'references', 'research', 'ux']);
+  assert.deepEqual(readdirSync(dir).sort(), ['.fashion', 'handoff', 'references', 'research', 'ux']);
   const state = JSON.parse(readFileSync(path.join(dir, '.fashion/state.json')));
   const workflow = readFileSync(new URL('../plugins/fashion/skills/fashion/SKILL.md', import.meta.url), 'utf8');
-  const template = JSON.parse(workflow.split('## state.json\n```\n')[1].split('\n```')[0]);
-  template.models = { research: 'inherit', implement: 'inherit', watchdog: 'inherit' };
+  const template = JSON.parse(workflow.split('## state.json\n```json\n')[1].split('\n```')[0]);
+  template.models = { research: 'inherit', critic: 'inherit' };
   assert.deepEqual(state, template);
 });
 
@@ -80,5 +80,5 @@ test('CLI invoked through a symlink actually initializes the project', () => {
   const result = spawnSync(process.execPath, [linkedScript, 'init', '--root', dir], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).runtime, 'codex');
-  assert.equal(JSON.parse(readFileSync(path.join(dir, '.fashion/state.json'))).phase, 1);
+  assert.equal(JSON.parse(readFileSync(path.join(dir, '.fashion/state.json'))).phase, 'brief');
 });

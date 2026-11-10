@@ -10,7 +10,7 @@ disable-model-invocation: true
    ```
    It is idempotent and prints one JSON line.
    - `"migrated": false`: the state is already schema 2. Continue.
-   - `"migrated": true`: a project from the retired build workflow (plugin 0.4 or earlier). Tell the user in at most four lines: the old and new phase, the archive path, and that Fashion now ends in approved designs, so nothing will be built, merged or checked. If `activeTickets` or `processRecords` are not empty, list them and say Fashion leaves them alone: the user may stop those tasks and dev servers and remove leftover worktrees (`git worktree list`) themselves. Never launch, collect, merge, check or clean up legacy work, and never edit `tickets/` or `prototypes/`.
+   - `"migrated": true`: a project from the retired build workflow (plugin 0.5 or earlier). Tell the user in at most four lines: the old and new phase, the archive path, and that Fashion now ends in approved designs, so nothing will be built, merged or checked. If `activeTickets` or `processRecords` are not empty, list them and say Fashion leaves them alone: the user may stop those tasks and dev servers and remove leftover worktrees (`git worktree list`) themselves. Never launch, collect, merge, check or clean up legacy work, and never edit `tickets/` or `prototypes/`.
    - Exit code 2 or 3: report its message. Do not edit the state by hand.
 3. Read `.fashion/state.json`, `.fashion/brief.md`, and `ux/decisions.md`, `ux/design-system.md` and `handoff/README.md` where present.
 4. Say in three lines: the current phase, what is done, what is open.

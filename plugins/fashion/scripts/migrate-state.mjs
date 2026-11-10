@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Moves a Fashion project from the retired build workflow (plugin 0.4 and
+// Moves a Fashion project from the retired build workflow (plugin 0.5 and
 // earlier: a state.json without "schema") to the design-only state, schema 2.
 //
 //   node migrate-state.mjs --root <project root> [--dry-run] [--now <ISO time>]
@@ -121,6 +121,7 @@ export function migrateState(old, inv, now) {
   for (const key of ["platform", "siteType", "siteUrl"]) if (old[key] !== undefined) next[key] = old[key];
   for (const key of ["references", "decisions", "openQuestions"]) if (Array.isArray(old[key])) next[key] = [...old[key]];
   if (typeof old.models?.research === "string") next.models.research = old.models.research;
+  if (old.models && Object.values(old.models).includes("inherit")) next.models.critic = "inherit";
   if (old.mobileStack === "swiftui") next.mobileOS = "ios";
   else if (old.platform === "mobile") {
     next.openQuestions.push(

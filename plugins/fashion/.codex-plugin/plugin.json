@@ -1,7 +1,7 @@
 {
   "name": "fashion",
-  "version": "0.5.0",
-  "description": "Research, prototype and build a website or app with reviewed screens and resumable tickets.",
+  "version": "0.6.0",
+  "description": "Design-only UI workflow: brief, research, direction and screen design in Google Stitch or Figma, then a reviewed handoff. Writes no application code.",
   "author": { "name": "moha-b" },
   "homepage": "https://github.com/moha-b/fashion",
   "repository": "https://github.com/moha-b/fashion",
@@ -12,7 +12,7 @@
   "hooks": "./codex/hooks.json",
   "interface": {
     "displayName": "Fashion",
-    "shortDescription": "Research, prototype and build reviewed UI",
+    "shortDescription": "Research and design reviewed UI in Stitch or Figma",
     "defaultPrompt": ["Use $fashion:fashion to start a design project."]
   }
 }

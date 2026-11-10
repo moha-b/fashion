@@ -1,7 +1,7 @@
 {
   "name": "fashion",
   "displayName": "Fashion",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Design-only UI agent: brief, focused research, direction and screen design in Google Stitch (or Figma), then a reviewed design handoff. Writes no application code.",
   "author": { "name": "moha-b" },
   "homepage": "https://github.com/moha-b/fashion",

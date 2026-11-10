@@ -183,6 +183,13 @@ test("mobile code stacks become a mobile OS or an open question", (t) => {
   assert.ok(state.openQuestions.some((q) => q.startsWith("Mobile OS")));
 });
 
+test("a Codex-created build-workflow project keeps inherited models", (t) => {
+  const root = tempDir(t);
+  put(root, ".fashion/state.json", { phase: 2, models: { research: "inherit", implement: "inherit", watchdog: "inherit" } });
+  assert.equal(migrate(root).status, 0);
+  assert.deepEqual(JSON.parse(read(root, ".fashion/state.json")).models, { research: "inherit", critic: "inherit" });
+});
+
 test("dry run writes nothing; bad input fails without changes", (t) => {
   const root = tempDir(t);
   put(root, ".fashion/state.json", LEGACY_BUILD_STATE);
@@ -218,7 +225,7 @@ test("only the design-only agents, skills, commands and scripts ship", () => {
   assert.deepEqual(list("agents"), ["researcher.md", "router.md", "visual-critic.md"]);
   assert.deepEqual(list("skills"), ["fashion", "grilling"]);
   assert.deepEqual(list("commands"), ["resume.md", "setup.md", "start.md", "status.md"]);
-  assert.deepEqual(list("scripts"), ["design-guard.mjs", "migrate-state.mjs"]);
+  assert.deepEqual(list("scripts"), ["codex-project.mjs", "design-guard.mjs", "migrate-state.mjs"]);
   assert.equal(existsSync(path.join(plugin, "vendor")), false);
 });
 
@@ -234,6 +241,7 @@ test("config files parse and match the design-only setup", () => {
   const manifest = json("plugins/fashion/.claude-plugin/plugin.json");
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   assert.equal(json(".claude-plugin/marketplace.json").plugins[0].name, manifest.name);
+  assert.equal(json("plugins/fashion/.codex-plugin/plugin.json").version, manifest.version, "Claude and Codex manifests share one version");
 });
 
 test("the skill's state.json block is the migrator's initial state", () => {

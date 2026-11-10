@@ -1,0 +1,107 @@
+[
+  {
+    "id": "legacy-phase4-active-tickets",
+    "context": "User runs /fashion:resume. .fashion/state.json has no schema field: phase 4, git true, screens [home: building]. tickets/T03-hero/state.json has stage building and taskId builder-7. A git worktree for T03-hero exists. migrate-state.mjs has not run in this session.",
+    "expected": { "action": "migrate-state", "phase": "direction" }
+  },
+  {
+    "id": "legacy-done-project",
+    "context": "User runs /fashion:resume. .fashion/state.json has no schema field and phase \"done\". Every ticket is done. migrate-state.mjs has not run in this session.",
+    "expected": { "action": "migrate-state", "phase": "done" }
+  },
+  {
+    "id": "migrated-legacy-baseline",
+    "context": "Resume. migrate-state.mjs printed {\"migrated\":false}. State is schema 2, phase direction, legacy.recreateBaseline true, legacy.activeTickets [T03-hero building builder-7], direction.round 0, no candidates. backend.tool stitch; ToolSearch found generate_screen_from_text and list_projects succeeded just now. ux/decisions.md records an accepted visual baseline. The user said: continue.",
+    "expected": { "action": "generate-directions", "phase": "direction" }
+  },
+  {
+    "id": "stitch-not-configured",
+    "context": "Schema 2, phase direction, brief approved, research done. backend.tool stitch. ToolSearch for generate_screen_from_text and for use_figma finds nothing. node and npx are installed, so a Next.js scaffold would be possible.",
+    "expected": { "action": "report-setup", "phase": "direction" }
+  },
+  {
+    "id": "figma-required-only-stitch-connected",
+    "context": "Schema 2, phase direction. The brief says the client's team needs editable Figma components; backend.tool figma. ToolSearch finds the Stitch tools and list_projects works, but nothing matches use_figma.",
+    "expected": { "action": "report-setup", "phase": "direction" }
+  },
+  {
+    "id": "stitch-unauthorized",
+    "context": "Schema 2, phase direction, backend.tool stitch. ToolSearch finds generate_screen_from_text, but list_projects returns an authentication error (API key not valid).",
+    "expected": { "action": "report-setup", "phase": "direction" }
+  },
+  {
+    "id": "research-already-saved",
+    "context": "Schema 2. The user just approved the brief; phase research, research.status pending. research/competitors.md has 5 entries, and ux/design-systems.md and ux/directions.md exist for the same product, audience, platform and market as the brief. The user has already declined to add references.",
+    "expected": { "action": "reuse-research", "phase": "direction" }
+  },
+  {
+    "id": "research-start",
+    "context": "Schema 2. Phase research was just set; research.status pending, taskId null. research/ and ux/ are empty. The user saved two references earlier.",
+    "expected": { "action": "launch-researcher", "phase": "research" }
+  },
+  {
+    "id": "researcher-running-on-resume",
+    "context": "Resume of a schema-2 project. Phase research, research.status running, research.taskId r-1, and the task status shows r-1 still running. The user has said nothing new.",
+    "expected": { "action": "wait", "phase": "research" }
+  },
+  {
+    "id": "user-shares-reference",
+    "context": "Schema 2, phase research, the researcher is running. The user writes: 'I love the product grid on https://shop.example.org, the dense two-column layout.' No references/shop-example/ folder exists.",
+    "expected": { "action": "capture-reference", "phase": "research" }
+  },
+  {
+    "id": "variants-timeout",
+    "context": "Schema 2, phase direction, backend ready. generate_screen_from_text created screen s1. generate_variants on s1 then timed out after 300 seconds with no response.",
+    "expected": { "action": "inspect-tool-state", "phase": "direction" }
+  },
+  {
+    "id": "get-screen-returns-html",
+    "context": "Schema 2, phase direction, round 1. Three candidate screens exist in Stitch. get_screen for each returned a screenshot download URL and an HTML code download URL. ux/evidence/direction-1/ is empty.",
+    "expected": { "action": "export-previews", "phase": "direction" }
+  },
+  {
+    "id": "candidates-exported-no-critic",
+    "context": "Schema 2, phase direction, round 1. Three candidates are exported to ux/evidence/direction-1/a.png, b.png and c.png. critic.kind null and critic.taskId null. Nothing has been shown to the user yet.",
+    "expected": { "action": "launch-visual-critic", "phase": "direction" }
+  },
+  {
+    "id": "design-feedback",
+    "context": "Schema 2, phase design, design.round 1, every screen round 0. Every frame is generated and exported, the critic's review is saved, and the set was shown to the user. The user writes: 'On the product screen, make add-to-cart sticky on mobile and drop the second banner.'",
+    "expected": { "action": "edit-screens", "phase": "design" }
+  },
+  {
+    "id": "consistency-fix-stale-export",
+    "context": "Schema 2, phase design, design.round 1. Every frame was generated and exported to ux/evidence/design-1/. The consistency check found drift on home, and apply_design_system just changed the home desktop and mobile frames; their export fields are now null. The critic has not run and nothing has been shown to the user.",
+    "expected": { "action": "export-previews", "phase": "design" }
+  },
+  {
+    "id": "resume-mid-revision",
+    "context": "Resume of a schema-2 project. Phase design, design.round 3 (saved before the edits), product screen round 2. edit_screens on the product frames completed before the restart; their toolRef fields are updated and their export fields are null. No critic is running.",
+    "expected": { "action": "export-previews", "phase": "design" }
+  },
+  {
+    "id": "third-revision-after-resume",
+    "context": "Resume of a schema-2 project. Phase design, design.round 3, product screen round 2 after two user-requested revision rounds. Every frame has a current export, and the design-3 review is saved and was shown. The user writes: 'Product still feels off, change the gallery again.'",
+    "expected": { "action": "ask-user", "phase": "design" }
+  },
+  {
+    "id": "design-approved",
+    "context": "Schema 2, phase design. The set was shown at gate 3. The user writes: 'Approved, all screens look good.' Every frame has a toolRef and an export path.",
+    "expected": { "action": "write-handoff", "phase": "handoff" }
+  },
+  {
+    "id": "handoff-written",
+    "context": "Schema 2, phase handoff. handoff/README.md, decisions.md, design-system.md, interactions.md and exports/ are written and complete. The user has not seen the summary yet.",
+    "expected": { "action": "ask-user", "phase": "handoff" }
+  },
+  {
+    "id": "handoff-approved",
+    "context": "Schema 2, phase handoff. The router showed the handoff summary. The user writes: 'Yes, that's final.'",
+    "expected": { "action": "mark-done", "phase": "done" }
+  },
+  {
+    "id": "user-asks-for-app",
+    "context": "Schema 2, phase done. The user writes: 'Great, now build this as a Next.js app and test the checkout flow in a browser.'",
+    "expected": { "action": "decline-code", "phase": "done" }
+  }
+]

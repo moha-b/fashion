@@ -1,12 +1,12 @@
 {
   "name": "fashion",
-  "description": "A phased UI-design agent: interview, research, direction, build.",
+  "description": "A design-only UI agent: brief, research, direction, design, handoff.",
   "owner": { "name": "moha-b" },
   "plugins": [
     {
       "name": "fashion",
       "source": "./plugins/fashion",
-      "description": "Phased UI-design agent: interview, research, direction, then build for web, Flutter or SwiftUI."
+      "description": "Design-only UI agent: brief, research, direction and screen design in Google Stitch or Figma, then a reviewed design handoff."
     }
   ]
 }

@@ -1,36 +1,43 @@
-# Fashion prompt regression tests
+# Fashion tests
 
-These fixtures evaluate decisions made from the actual shipped agent/workflow instructions. They do not implement a second state machine or use keyword matching as a substitute for behavior.
-
-Validate fixture definitions locally, without a model call:
+## Design workflow (deterministic)
 
 ```sh
-node tests/recovery-prompts.mjs --check
+node --test tests/design-workflow.test.mjs
 ```
 
-Run the decision regression suite with an authenticated Claude CLI:
+No model calls and no network. It covers:
+- **Write guard** (`plugins/fashion/scripts/design-guard.mjs`): Fashion's agents (router, researcher, visual-critic) may write only non-code files in `.fashion/`, `research/`, `ux/`, `references/` and `handoff/`, plus `.claude/settings.json` and `.gitignore`. Code files (HTML, CSS, JS/TS, Dart, Swift and similar) are blocked everywhere, including an HTML export dropped into `handoff/`. Legacy `tickets/` and `prototypes/` are read-only. Other agents and sessions pass untouched, and unreadable hook input fails open.
+- **Legacy migration** (`plugins/fashion/scripts/migrate-state.mjs`): each build-workflow phase (0.5 and earlier) maps to its design phase (1 to `brief`, 2 to `research`, 3 and 4 to `direction`, `done` stays `done` and is flagged); the archive keeps the original bytes; the new state has exactly the documented keys; a second run changes nothing; `tickets/`, `prototypes/` and process records are listed but never modified; in-flight tickets and running process records are reported; mobile code stacks become a mobile OS or an open question; Codex projects keep `inherit` models; dry run writes nothing; missing, invalid, unknown-phase and future-schema states fail without changes.
+- **Plugin shape**: only the router, researcher and visual-critic agents ship; no vendor build skills; the Claude and Codex manifests share one version; the bundled MCP servers are inspo, awwwards and dembrandt; the hook points at the guard; the template pre-allows only read-only design-tool calls; the `state.json` block in the skill equals the migrator's initial state; no shipped prompt dispatches a retired build agent or scaffolds an app.
+
+It does not test live Stitch or Figma calls, their authentication, export downloads, or the quality of any design.
+
+## Decision regression (model run, optional)
+
+Validate the fixtures locally, without a model call:
 
 ```sh
-node tests/recovery-prompts.mjs --run /tmp/fashion-recovery-report.json
+node tests/decision-prompts.mjs --check
 ```
 
-Repeat runs when changing prompts or fixtures: model output is nondeterministic. Keep every report and report all failures, rather than retrying until one run passes. For three independent runs:
+Run the decisions with an authenticated Claude CLI:
+
+```sh
+node tests/decision-prompts.mjs --run /tmp/fashion-decisions.json
+```
+
+The runner sends only the shipped prompts (skill, resume, setup, router, visual critic) and synthetic fixtures. Expected answers stay local. It uses Sonnet, disables tools and customizations, runs in an empty temporary directory, caps spend at $1 and runtime at 180 seconds, and saves the raw JSON response (with usage, cost and duration) to the report path. Requires CLI support for `--safe-mode` and structured output. Model output is nondeterministic: repeat runs when prompts or fixtures change and report every failure rather than retrying until one passes.
 
 ```sh
 failed=0
 for run in 1 2 3; do
-  node tests/recovery-prompts.mjs --run "/tmp/fashion-recovery-${run}.json" || failed=1
+  node tests/decision-prompts.mjs --run "/tmp/fashion-decisions-${run}.json" || failed=1
 done
 test "$failed" -eq 0
 ```
 
-The runner sends only the listed plugin prompts and synthetic fixture inputs to Claude. Expected answers stay local. It uses Sonnet, disables tools and customizations, runs in an empty temporary directory, caps spend at $1 and runtime at 180 seconds, and saves the raw JSON response (including model usage, cost and duration) to the requested report path. A missing response, CLI error, omitted/duplicate case or wrong decision fails the run. Requires CLI support for `--safe-mode` and structured output.
-
-Each fixture declares `role: watchdog`, `role: router` or `role: checker`. The model classifies watchdog flags only for watchdog cases; router and checker cases always use `none`. This removes role guessing without relaxing any decision assertions. Coverage includes completed work waiting in queues, completed but uncollected results/checks, stale heartbeats and attempts, hung mergers/checkers, a landed merge with its branch deleted, terminated-worker replacement, repeated resume with an active replacement, invalid legacy stages/extra fields, inherited versus explicit browser restrictions, final-review revision ownership, missing project-local Playwright, a required readiness probe before a resumed browser check, the screen gate (a landing page has one screen; on a multi-screen site the user names the next screen, and is asked when they don't; critic first, restart before, during and after the critique, a stale review after a revision), migrating a phase-4 project from 0.3.0 that has no screen state (clear and ambiguous mappings, no second migration), binding the checker to the recorded browser runtime (global runtime reuse, a different import, a runtime that disappeared), and cleanup ownership for long-lived processes (owned orphan, active owner, unrelated server on the port, PID reuse).
-
-Fixtures describe filesystem, task and Git snapshots. This suite tests prompt decisions, not actual file writes, Git operations, task termination or browser execution. It does not establish deterministic schema enforcement, crash safety or improved design quality. Those still need live integration runs and repeated comparisons on the same briefs/assets, with preference/task outcomes, revisions, time, cost and model versions recorded.
-
-The shared suite also covers 0.4.0 projects with screen state but no site type, restarting while an accepted screen awaits the next-screen choice, and the follow-up choice authorizing the next screen. The runner evaluates these shared instructions in Claude; it does not validate Codex tool execution.
+Fixtures cover: migrating a build-workflow project with tickets in flight and a finished build-workflow project; continuing a migrated project by recreating its baseline in the design tool; a missing, unauthorized or wrong backend (setup is reported, never a code fallback or an automatic switch); reusing saved research; one researcher per brief and no duplicate on resume; capturing a user reference; a timed-out Stitch generation (inspect before retrying); Stitch returning HTML (export images only); critique before the direction gate; design edits; previews refreshed after consistency fixes and edits before critique or approval; revision rounds persisted across a resume, including the two-round limit; the handoff gates; and a request for an implementation after handoff (declined).
 
 ## Codex
 
@@ -39,33 +46,4 @@ node --test tests/codex-project.test.mjs
 FASHION_CODEX_TESTS=1 node --test tests/codex-plugin.test.mjs
 ```
 
-Initialization tests exercise the CLI, repeated starts, existing content and host settings, path collisions, and symlink invocation. They compare new state with the shared workflow contract. The opt-in integration test needs a current Codex CLI and permission to start its local app-server. It uses `plugin/read` to check real manifest/skill/MCP discovery and confirm that Claude hooks are not loaded. It does not install the plugin, start MCP servers, or call a model.
-
-For behavioral validation, use the installed Codex entry skill with an isolated project: start from supplied local assets without a website, inspect read-only status, and resume an accepted screen with no next-screen choice. Check files, approvals and next actions. Report actual coverage separately from a full research/prototype/build/browser pilot; a successful parser or initialization test does not establish design quality.
-
-## Process ownership (real subprocesses)
-
-`plugins/fashion/scripts/owned-process.mjs` starts and stops dev servers with a recorded identity (pid, process group, start time, working directory). Its tests start real servers, including a child process in the same group, and check that they actually exit:
-
-```sh
-node --test tests/owned-process.test.mjs
-```
-
-Each case asserts the real process state, not just the helper's exit code. They cover an owned server with a child; a command that died while its child changed directory; a launcher that exits at once but leaves a child (start keeps a record); a command that exits with nothing left (start fails, record `exited`); a supervisor killed while processes remain (`unverified`, exit 4, record kept, nothing touched); PID reuse (refused, process left running); an unrelated server on the recorded port (refused at start, never stopped); a record write failure (start stops what it launched); and a supervisor killed inside the startup window (start exits 4 `unverified`, the record stays `running`, `stop` refuses, the command is left alive). macOS and Linux only; they need `ps`, `pgrep`, and `lsof` on macOS.
-
-## Usage collector
-
-`bench/collect-usage.mjs` is tested on synthetic transcripts:
-
-```sh
-node --test tests/collect-usage.test.mjs
-```
-
-The tests check that one API request written as several transcript lines is counted once, that subagent usage is attributed through `.meta.json`, and that session and time filters work. They check that human wait time ignores skill text, task notifications and tool results. And they check that cost stays `unknown` (never 0) unless every model has a full price.
-
-They also cover four cases from the review of PR #9:
-- recollecting a run keeps the operator's fields;
-- time bounds compare instants (fractional seconds, offsets, invalid or reversed bounds);
-- a malformed interior line fails with file:line;
-- an unfinished final line marks the run incomplete, with only a lower bound for cost;
-- the documented `--out` path works in a fresh folder.
+The initialization tests exercise the CLI, repeated starts, existing content and host settings, path collisions and symlink invocation, and compare the new state with the shared state contract (with `inherit` models). The opt-in test needs a current Codex CLI and permission to start its local app-server; it uses `plugin/read` to check real manifest, skill and MCP discovery and that Claude hooks are not loaded. It does not install the plugin, start MCP servers or call a model, and it says nothing about design quality.

@@ -1,10 +1,42 @@
 # Fashion
 
-A phased UI-design workflow for Claude Code and Codex. It interviews you, researches competitors, helps you choose a direction, then builds the UI for web (Next.js), Flutter or SwiftUI.
+A design-only UI agent for Claude Code and Codex. It writes a brief with you, runs one bounded research pass, generates direction alternatives in a design tool, designs the screens and their states, and hands off approved designs: links, exported previews, the design system, interaction specifications and a short record of decisions. It never writes application code.
 
-## Install
+The design backend is Google Stitch by default, through Google's Stitch MCP server, or Figma through Figma's MCP server when you need editable Figma components. Fashion installs neither; setup tells you what is missing.
 
-### Codex
+## Install in Claude Code
+
+```
+/plugin marketplace add moha-b/fashion
+/plugin install fashion@fashion
+/fashion:setup          # readiness check; installs nothing
+```
+
+Connect a design backend yourself. Stitch (create the key in Stitch: profile menu > Stitch settings > API keys):
+
+```bash
+claude mcp add --transport http stitch https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: <your Stitch API key>"
+```
+
+Figma (only if you need editable Figma components): install Figma's plugin and sign in from `/plugin` > Installed > figma,
+
+```bash
+claude plugin install figma@claude-plugins-official
+```
+
+or add the server and authenticate from `/mcp` > figma:
+
+```bash
+claude mcp add --transport http figma https://mcp.figma.com/mcp
+```
+
+Then, in the folder of your product, run `/fashion:start`.
+
+The plugin sets `fashion:router` as the default main agent, so every session with the plugin enabled starts as the router. Start a normal session with `claude --agent <other>` or by disabling the plugin.
+
+Other commands: `/fashion:resume` (continue after a restart, and migrate projects from the build workflow), `/fashion:status` (phase, backend, screens, open questions).
+
+## Install in Codex
 
 In a current Codex CLI with plugin support:
 
@@ -13,78 +45,72 @@ codex plugin marketplace add moha-b/fashion
 codex plugin add fashion@fashion
 ```
 
-For a local checkout, use `codex plugin marketplace add /absolute/path/to/fashion` instead. In Codex desktop, select the Fashion marketplace in the plugin browser and install Fashion. Open a new chat in your product folder, select the `fashion:fashion` skill, and use:
+For a local checkout, use `codex plugin marketplace add /absolute/path/to/fashion` instead. In Codex desktop, select the Fashion marketplace in the plugin browser and install Fashion. Open a new chat in your product folder, select the `fashion:fashion` skill, and use `$fashion:fashion setup`, `start`, `resume` or `status`.
 
-```text
-$fashion:fashion setup
-$fashion:fashion start
-$fashion:fashion resume
-$fashion:fashion status
+Connect Stitch in `~/.codex/config.toml`, with your key in the `STITCH_API_KEY` environment variable:
+
+```toml
+[mcp_servers.stitch]
+url = "https://stitch.googleapis.com/mcp"
+env_http_headers = { "X-Goog-Api-Key" = "STITCH_API_KEY" }
 ```
 
-Codex inherits your selected model and permissions. It uses native subagents when available, explicit Git worktrees, and the shared evidence/recovery workflow. With no subagent tools, it runs roles sequentially and labels checks as self-review. The plugin does not change your default agent, write Claude settings, or install a Codex router-write hook. Setup checks MCP/browser availability before relying on it; missing required capabilities remain explicit blockers. The usage collector under `bench/` supports Claude transcripts only.
-
-Packaging follows the [OpenAI plugin format](https://developers.openai.com/plugins/build/plugins); role execution follows [Codex subagent behavior](https://learn.chatgpt.com/docs/agent-configuration/subagents). See [the runtime adapter](plugins/fashion/codex/runtime.md) for host differences.
-
-### Claude Code
-
-```
-/plugin marketplace add moha-b/fashion
-/plugin install fashion@fashion
-/fashion:setup          # once per machine
-```
-
-Then, in the folder of your product:
-
-```
-/fashion:start
-```
-
-The plugin sets `fashion:router` as the default main agent, so every session with the plugin enabled starts as the router. Start a normal session with `claude --agent <other>` or by disabling the plugin.
-
-Other commands: `/fashion:resume` (continue after a restart), `/fashion:status` (phase, open questions, saved references).
+or Figma with `codex mcp add figma --url https://mcp.figma.com/mcp` and `codex mcp login figma` (Figma admits only clients in its MCP catalog). Codex inherits your selected model and permissions and does not run the Claude write hook, so the no-code boundary there is an instruction, not a sandbox. Packaging follows the [OpenAI plugin format](https://developers.openai.com/plugins/build/plugins); see [the runtime adapter](plugins/fashion/codex/runtime.md) for host differences.
 
 ## Phases
 
-1. **Interview.** Works for any website. Reads what you give it (URL, screenshots, code, decks), settles whether it is a landing page or a multi-screen site, and, if you give your own site and confirm you own its images and copy, collects them into `references/own-site/` as the assets for the new design. If that is not enough, it grills you one question at a time. Settles web or mobile (one per product) and, for mobile, Flutter or SwiftUI. Writes `.fashion/brief.md`.
-2. **Research.** A background agent finds about 5 global and 3 local competitors and appends them to `research/competitors.md`. A second agent extracts design systems from the top 3 (dembrandt, after a robots check) and proposes directions. Meanwhile you save references: URLs (captured by the awwwards MCP) or files dropped into `references/<slug>/` with a `notes.md` of what you love. Images pasted into chat cannot be saved.
-3. **Direction.** Compares competitors with your options, renders two versions of one representative screen, checks critical assets and the defining interaction, and reviews desktop and mobile results before settling the visual baseline.
-4. **Build.** The router offers `git init` once (worktrees and merges need a repo; without one, workers run one at a time). It writes `ux/components.md` from the accepted prototype and the screen list, then builds one screen at a time: it tickets that screen only, builds and checks it, and shows it to you. A landing page is one screen. A multi-screen site (e-commerce, an app) starts with home, and after each screen you say whether anything changes and which screen comes next. Each screen is split into tickets (`tickets/<id>/rd.md` and `eval.md`, listed in `tickets/board.md`). You mark tickets `ready`; the router assigns them to build workers, merges each branch, and has a checker test it in a real browser or simulator against `eval.md`. Responsively is preferred; a capable browser may cover checks it cannot run. A per-ticket state record supports watchdog and restart recovery. Workers follow shared component rules and run a `clean-code-guard` pass before handing back. A final visual review checks the complete journey. Web: Next.js (major pinned in `create-next-app@<major>`), React Three Fiber if you chose 3D, plus the design skills. Mobile: Flutter or SwiftUI.
+1. **Brief.** Reads what you give it (URL, screenshots, decks) and asks only questions that change the design: audience and primary task, web or mobile, landing page or multi-screen, brand constraints, and whether you need editable Figma components. If you give your own site and confirm you own its images and copy, it collects them into `references/own-site/`. Writes `.fashion/brief.md`. Gate: your yes.
+2. **Research.** Reuses saved references and research first. Otherwise one background researcher, with hard caps (at most 5 comparable products, design systems of the top 2, at most 3 directions), writes `research/competitors.md`, `ux/design-systems.md` and `ux/directions.md` while you add up to three references of your own. No gate.
+3. **Direction.** Generates two or three alternatives of one representative screen in the design tool, exports previews, has an independent critic review the images, and shows them with a recommendation. Gate: you pick. The chosen direction becomes the design system.
+4. **Design.** Generates each screen of the primary journey with the states that matter, at each form factor, from the design system; fixes drift; checks colour contrast of the tokens; writes interactions as a specification. The critic reviews the set. Gate: you approve the set or name changes.
+5. **Handoff.** Writes `handoff/`: links and tool references for every screen and state, exported previews, the design system, interaction specifications and a one-page decision record. Gate: your final yes.
 
-Every phase ends with your explicit yes.
+Interactions are specifications or the design tool's own prototype links; nothing is run, so nothing is claimed as validated. Code that a design tool can produce (Stitch's HTML, Figma's code output) is never downloaded, reviewed or handed off.
 
-## Claude Code agents and models
+## Agents and models
 
-| Role | Agents | Default model |
+| Role | Agent | Default model (Claude Code) |
 |---|---|---|
-| router | `router` (main agent; talks to you, never writes app code — a hook blocks its writes outside `.fashion/`, `tickets/`, `research/`, `ux/`, `references/`) | Opus, high effort |
-| research | `competitor-researcher`, `ux-analyst` | Opus, high effort |
-| implement | `prototyper`, `visual-critic`, `builder`, `merger`, `checker`, `reproducer` | Sonnet |
-| watchdog | `watchdog` | Sonnet |
+| router | `router` (main agent; talks to you and makes the design-tool calls) | Opus, high effort |
+| research | `researcher` (once per brief, background) | Opus, high effort |
+| critic | `visual-critic` (once per review round, background; reviews exported images only) | Sonnet |
 
-`/fashion:start` asks once which models to use and saves them in `.fashion/state.json` under `models` (`research`, `implement`, `watchdog`). `/fashion:status` shows them.
+Models for research and critic live in `.fashion/state.json` under `models`; `/fashion:status` shows them. Codex projects use `inherit`, meaning the chat's own model.
 
-## Claude Code setup and project files
+## What it touches
 
-- `/fashion:setup` writes to your home directory, after one confirmation: skills into `~/.agents/skills/` and symlinks in `~/.claude/skills/`. It skips identical skills, asks before replacing different ones, and installs no software. It reports missing prerequisites (node, Playwright, Xcode, Flutter).
-- `/fashion:start` writes only in the current folder: `.fashion/`, `research/`, `ux/`, `references/` and `.claude/settings.json` (pre-allows WebSearch, WebFetch and this plugin's MCP tools). It never runs `git init`; the router offers that once, before phase 4, and commits planning files and merges only after you say yes.
-- The plugin bundles four MCP servers (inspo, awwwards, dembrandt, responsively); the npm ones are version-pinned and run through `npx`.
+- Setup checks the design backend and research tools and prints setup commands. It installs nothing and changes no configuration; in Claude Code, the one optional change (repointing an existing `grill-me` skill to `fashion:grilling`) needs your yes.
+- Start writes only in the current folder: `.fashion/`, `research/`, `ux/`, `references/` and `handoff/`. In Claude Code it also writes `.claude/settings.json` (pre-allows WebSearch, WebFetch, this plugin's research MCP tools, and read-only Stitch tools for a server named `stitch`). In Codex it writes no host configuration.
+- In Claude Code, a plugin hook (`scripts/design-guard.mjs`) blocks Fashion's own agents from writing outside those folders and from writing code files anywhere. Other agents and sessions are not affected.
+- The plugin bundles three research MCP servers: inspo (HTTP), awwwards and dembrandt (version-pinned, run through `npx`). It does not bundle Stitch or Figma.
 
-## Regression checks
+## Upgrading from 0.5 or earlier
 
-Recovery and browser-fallback decision fixtures live in [tests/README.md](tests/README.md). They cover watchdog, resume, replacement workers and final visual revisions. The optional model run checks the shipped prompts; it does not replace live browser and full-workflow testing.
+0.5 and earlier built the app (tickets, worker agents, worktrees, merges, browser checks). That workflow is retired. Resume runs `scripts/migrate-state.mjs` once:
+- archives the old state to `.fashion/legacy/state-v1.json` and writes schema 2;
+- maps the phase: interview to `brief`, research to `research`, direction and build to `direction` (the accepted visual baseline is recreated in the design tool as the single candidate), `done` stays `done` and resume asks once whether to recreate the design;
+- keeps the brief, decisions, references, research and the project's model choices (`inherit` stays `inherit`);
+- lists tickets that were in flight and dev-server records still marked running, and logs the migration in `.fashion/migration.md`.
 
-Codex initialization and host parsing checks:
+It never builds, merges, checks, stops or deletes anything. `tickets/`, `prototypes/`, app code and git worktrees stay as they are; stop leftover workers and dev servers and remove worktrees (`git worktree list`) yourself. Skills that earlier versions' setup installed into `~/.agents/skills/` are no longer used; Fashion does not remove them.
+
+## Limitations
+
+- Stitch's and Figma's tool sets, quotas, plans and seats are set by Google and Figma and can change. Fashion finds tools at runtime by name and reports what it cannot find; it does not work around a missing integration.
+- The Stitch MCP tools Fashion uses take text prompts and DESIGN.md files, not image uploads, so your own images are mapped in the handoff rather than placed in Stitch screens. Figma can place them (`upload_assets`).
+- There is no automated transfer from Stitch to Figma.
+- Accessibility checks are design-level (token contrast, target sizes); no runtime accessibility testing.
+- Review quality depends on the previews the design tool exports; an image the tool returns only inline is recorded as a link.
+- No measured comparison of time or token use against the build workflow exists yet.
+
+## Tests
+
+See [tests/README.md](tests/README.md). The deterministic suites run with:
 
 ```sh
-node --test tests/codex-project.test.mjs
-FASHION_CODEX_TESTS=1 node --test tests/codex-plugin.test.mjs
+node --test tests/design-workflow.test.mjs tests/codex-project.test.mjs tests/collect-usage.test.mjs
 ```
-
-The second command requires a current `codex` executable. It calls the local app-server's `plugin/read` parser without installing a plugin, running a model, or connecting to MCP servers. These checks do not establish a full live design pilot.
 
 ## Licensing
 
-- Fashion: MIT (`LICENSE`).
-- Bundled in `plugins/fashion/vendor/skills/` with their licences: `scrollcraft` (MIT), `bang-motion` (MIT).
-- Not bundled, installed from upstream by `/fashion:setup` at pinned commits: `design-taste-frontend`, `hallmark`, `app-store-screenshots`, `brag-slim`, `clean-code-guard`. All are MIT upstream; their licences stay with their own repos. Details in `plugins/fashion/vendor/skills/README.md`.
+Fashion: MIT (`LICENSE`). Up to 0.5 the plugin bundled `scrollcraft` and `bang-motion` and installed five upstream build skills; 0.6.0 removed them because they only served app building.

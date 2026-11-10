@@ -70,11 +70,13 @@ export function parseInstant(value, label) {
 const inWindow = (ms, since, until) => (since === null || ms >= since) && (until === null || ms <= until);
 const iso = (ms) => (ms === null || ms === undefined ? null : new Date(ms).toISOString());
 
-// A real human turn: a user message typed by a person. Skill and command text
-// (isMeta), task notifications and other injected turns (origin) and tool results
-// are not.
+// A real human turn: a user message typed by a person. Interactive sessions mark
+// it with origin.kind "human" (headless prompts carry no origin). Skill and
+// command text (isMeta), task notifications, auto-continuations and other
+// injected turns, and tool results are not human turns.
 function isHumanTurn(entry) {
-  if (entry.type !== "user" || entry.isSidechain || entry.isMeta || entry.origin) return false;
+  if (entry.type !== "user" || entry.isSidechain || entry.isMeta) return false;
+  if (entry.origin && entry.origin.kind !== "human") return false;
   const content = entry.message?.content;
   if (typeof content === "string") return content.trim() !== "";
   return Array.isArray(content) && content.some((c) => c.type === "text") && !content.some((c) => c.type === "tool_result");
@@ -121,6 +123,7 @@ function summarizeFile(file, since, until, agent) {
   const perModel = {};
   for (const e of byRequest.values()) {
     const model = e.message.model ?? "unknown";
+    if (model === "<synthetic>") continue; // client-side placeholders (for example a usage-limit notice), no API usage
     addUsage((perModel[model] ??= emptyUsage()), e.message.usage);
   }
   times.sort((a, b) => a - b);
@@ -129,17 +132,40 @@ function summarizeFile(file, since, until, agent) {
 
 // Time the run spent waiting for a person: from the last main-thread assistant
 // line before a human turn to that turn.
-function humanWaitMs(entries) {
+// Time the run spent waiting for a person, and time it sat paused by a usage
+// limit. A person answers either by typing a turn (from the last main-thread
+// assistant line) or through an AskUserQuestion tool (from the question to its
+// tool result). A usage-limit pause runs from the last assistant line to the
+// auto-continuation turn.
+function waits(entries) {
   let lastAssistant = null;
-  let wait = 0;
+  let human = 0;
+  let limit = 0;
+  let questions = 0;
+  const asked = new Map();
   for (const e of entries.filter((x) => !x.isSidechain && x.ms !== undefined).sort((a, b) => a.ms - b.ms)) {
-    if (e.type === "assistant") lastAssistant = e.ms;
-    else if (isHumanTurn(e) && lastAssistant !== null) {
-      wait += e.ms - lastAssistant;
+    if (e.type === "assistant") {
+      lastAssistant = e.ms;
+      for (const c of Array.isArray(e.message?.content) ? e.message.content : []) {
+        if (c.type === "tool_use" && c.name === "AskUserQuestion") asked.set(c.id, e.ms);
+      }
+      continue;
+    }
+    if (e.type !== "user") continue;
+    const content = Array.isArray(e.message?.content) ? e.message.content : [];
+    const answered = content.filter((c) => c.type === "tool_result" && asked.has(c.tool_use_id));
+    if (answered.length) {
+      for (const c of answered) { human += e.ms - asked.get(c.tool_use_id); asked.delete(c.tool_use_id); questions++; }
+      lastAssistant = null;
+    } else if (e.origin?.kind === "auto-continuation" && lastAssistant !== null) {
+      limit += e.ms - lastAssistant;
+      lastAssistant = null;
+    } else if (isHumanTurn(e) && lastAssistant !== null) {
+      human += e.ms - lastAssistant;
       lastAssistant = null;
     }
   }
-  return wait;
+  return { human, limit, questions };
 }
 
 function hashInputs(dir) {
@@ -239,7 +265,7 @@ export function collect(opts) {
     start: iso(starts[0]), end: iso(ends.at(-1)),
     wallMs: starts.length && ends.length ? ends.at(-1) - starts[0] : null,
     complete, warnings,
-    humanWaitMs: humanWaitMs(mainEntries),
+    ...(({ human, limit, questions }) => ({ humanWaitMs: human, limitPauseMs: limit, questionsAnswered: questions }))(waits(mainEntries)),
     efforts: [...new Set(summaries.flatMap((s) => s.efforts))],
     models: modelCosts, agents, totalCostUSD, lowerBoundCostUSD,
     pricesFile: opts.prices ?? null,

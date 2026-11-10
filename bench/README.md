@@ -33,6 +33,10 @@ node bench/collect-usage.mjs --project /path/to/pilot-<id> --run pilot-<id>-1 \
   --variant new --commit <sha> --inputs bench/briefs/<id> --session <id,id> \
   --out bench/results/manifest.json
 ```
+- **Output folder:** `--out` creates its folder if missing.
+- **Recollecting:** running it again for the same `--run` refreshes the computed usage and keeps everything you added by hand (`outcome`, `revisions`, `failures`, `evidence` and any other key).
+- **Time bounds:** `--since` and `--until` are compared as instants, so fractional seconds and offsets work. Invalid bounds are an error.
+- **Bad lines:** a malformed transcript line stops the collection with its file and line number. A final line still being written by a live session is only a warning, but it sets `complete: false`, makes `totalCostUSD` `unknown`, and gives `lowerBoundCostUSD` instead. Collect again after the session ends.
 - **Cost** is `unknown` unless you pass `--prices prices.json` (USD per million tokens per model id: `input`, `output`, `cacheWrite5m`, `cacheWrite1h`, `cacheRead`). Use your current price sheet. Headless runs (`claude -p --output-format json`) also report `total_cost_usd`; record it next to the manifest entry.
 - **Accuracy:** checked against a headless run's own totals, the Opus counts match exactly and the Sonnet counts are within 0.4%. Requests still in flight when a session exits can differ.
 

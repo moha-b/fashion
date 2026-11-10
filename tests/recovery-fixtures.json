@@ -166,5 +166,47 @@
     "role": "router",
     "context": "Phase 4. currentScreen is home (building). Home tickets T03 and T04 are building with active tasks; no home ticket is ready. A ticket T07 for the product screen is stage ready (left over from an earlier draft) and its blocked-by are done. maxWorkers 3, a worker slot is free. Choose the next immediate action for T07.",
     "expected": {"flag":"none","action":"wait","stage":"ready","attempt":0}
+  },
+  {
+    "id": "legacy-phase4-no-screens",
+    "role": "router",
+    "context": "Resume. Project from plugin 0.3.0, phase 4. .fashion/state.json has no screens or currentScreen; tickets/board.md has no screen column. T00-scaffold, T01-tokens, T02-home-hero are done; T03-home-grid is building with an active builder task. The brief's journey is home, product, cart and every ticket's rd.md names its page clearly. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"migrate-state","stage":null,"attempt":null}
+  },
+  {
+    "id": "legacy-phase4-ambiguous-mapping",
+    "role": "router",
+    "context": "Resume. Project from plugin 0.3.0, phase 4, no screens in state. Tickets T04-lookbook and T05-stories exist but the brief's journey (home, product, cart) does not mention a lookbook or stories page, so their screen and order are unclear. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ask-user","stage":null,"attempt":null}
+  },
+  {
+    "id": "resume-after-screen-migration",
+    "role": "router",
+    "context": "Second resume. state.json already has screens (migrated by the previous resume): home building (current), product planned, cart planned. Home ticket T05-home-footer is stage ready, attempt 0, blocked-by done, no active tasks, root free. Choose the next immediate action for T05.",
+    "expected": {"flag":"none","action":"launch-builder","stage":"building","attempt":1}
+  },
+  {
+    "id": "restart-during-critique-live",
+    "role": "router",
+    "context": "Resume. Screen home status critique, round 1, commit abc123, criticTask critic-7 is still running and logged progress a minute ago. No review file yet. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"wait","stage":null,"attempt":null}
+  },
+  {
+    "id": "restart-during-critique-dead",
+    "role": "router",
+    "context": "Resume. Screen home status critique, round 1, commit abc123 (equal to current HEAD). The critic task critic-7 is confirmed terminated and no ux/visual-review-home-1.md exists. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"launch-visual-critic","stage":null,"attempt":null}
+  },
+  {
+    "id": "restart-review-complete",
+    "role": "router",
+    "context": "Resume. Screen home status review, round 1. ux/visual-review-home-1.md exists and names commit abc123, which is the current HEAD. The user has not answered the screen question yet. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ask-user","stage":null,"attempt":null}
+  },
+  {
+    "id": "restart-review-stale-commit",
+    "role": "router",
+    "context": "Resume. Screen home status review, round 1. ux/visual-review-home-1.md names commit abc123, but a revision has since been merged and the current HEAD is def456. The user has not answered. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"launch-visual-critic","stage":null,"attempt":null}
   }
 ]

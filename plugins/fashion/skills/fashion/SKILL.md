@@ -42,7 +42,7 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
 - `models` picks the model per role. Values are `opus`, `sonnet`, `haiku` or `fable`. A missing key means the default above.
 - `git` is `null` (not asked yet), `true` (the folder is a git repo and phase 4 uses worktrees) or `false` (the user declined; workers run one at a time in the folder).
 - `maxWorkers` caps how many build workers run at once (within the current screen).
-- `screens` is the ordered build list for phase 4: `{"id": "home", "title": "Home", "status": "planned" | "building" | "review" | "accepted"}`. `currentScreen` is the id being built or reviewed. See "4.3 Screen by screen".
+- `screens` is the ordered build list for phase 4: `{"id": "home", "title": "Home", "status": "planned" | "building" | "critique" | "review" | "accepted", "commit": null, "criticTask": null, "review": null, "round": 0}`. `commit` is the code the screen was last critiqued at (`"no git"` without Git), `criticTask` the running critic's task ID, `review` the path of the completed review for that commit, `round` the review count. `currentScreen` is the id being built or reviewed. See "4.3 Screen by screen".
 
 ## Models per role
 | Role | Agents | Default | Set by |
@@ -116,9 +116,12 @@ Build one screen at a time, and let the user see each finished screen before the
 1. With the components list (4.2), write the screen order in `state.screens` from the primary journey in the brief and `ux/decisions.md`. Home comes first; if the product has no home screen, the journey's entry screen does. Show the order with the components list and get one yes for both.
 2. Set the first screen `building` and `currentScreen` to its id. Ticket only that screen (4.3.1). Foundation tickets (scaffold, tokens, primitives, extractions) belong to the first screen.
 3. Assign and check its tickets as in 4.4. Workers may run in parallel within the screen; never start tickets for another screen.
-4. When every ticket of the screen is `done`, set the screen `review`. Run `fashion:visual-critic` on that screen at desktop and phone against the accepted baseline. Then show the user the URL to open, the screenshot paths, and the critic's findings (up to three), and ask one question: "Any changes to <screen>? If none, I'll mark it accepted and start <next screen>."
-5. Changes: handle them as revisions of this screen (see Close for who does what: a reopened ticket and a `fashion:reproducer` attempt within its scope, or a draft ticket for new scope that the user marks ready). Return to step 4 when they are done.
-6. No changes: set the screen `accepted` and record it in `ux/decisions.md`. That answer also authorizes the next screen: set it `building`, ticket it, mark its tickets `ready` (the question said so), show the board in one line, and assign. When no screen is left, go to Close.
+4. When every ticket of the screen is `done`: increment `round`, record the current commit in `commit`, set the screen `critique`, launch `fashion:visual-critic` for that screen, round and commit at desktop and phone against the accepted baseline, and save its task ID in `criticTask` at once.
+5. When the critic returns, check that `ux/visual-review-<screen>-<round>.md` exists and names that commit. Then set `review`, `review` to that path, and clear `criticTask`. Only now show the user the URL to open, the screenshot paths, and the critic's findings (up to three), and ask one question: "Any changes to <screen>? If none, I'll mark it accepted and start <next screen>." Never ask that question for a screen that is not `review`, or whose review names an older commit than the code now on main.
+6. Changes: set the screen back to `building` and handle them as revisions of this screen (see Close for who does what: a reopened ticket and a `fashion:reproducer` attempt within its scope, or a draft ticket for new scope that the user marks ready). Return to step 4 when they are done; the next round reviews the new commit.
+7. No changes: set the screen `accepted` and record it in `ux/decisions.md`. That answer also authorizes the next screen: set it `building`, ticket it, mark its tickets `ready` (the question said so), show the board in one line, and assign. When no screen is left, go to Close.
+
+A restart never skips the critic. On resume: `building` continues the screen's tickets (step 4 once all are done). `critique` with a live critic waits for it; with a terminated critic it collects a matching review (step 5) or launches a new critic for the same round and commit, never asking the user. `review` asks the question again only when its review file exists and names the code now on main (current HEAD, or `no git` with no changes since); if the code moved or the file is missing, it goes back to step 4.
 
 ### 4.3.1 Tickets
 Run the `fashion:ticket` skill for the current screen only. It writes `tickets/<id>/rd.md`, `tickets/<id>/eval.md` and `tickets/board.md`, all as `draft`. Each ticket names the components it creates or reuses from `ux/components.md`. Show the board. Tell the user to mark the tickets they want built as `ready` (they can say "all ready" and you update the board). Only `ready` tickets are assigned.
@@ -172,7 +175,7 @@ When a builder returns (merges and checks share the project root, so run one mer
 7. Bugs the checker found that are outside the ticket (including bugs that were there before): add a `draft` ticket `bug-<n>` for each, and mention them to the user.
 
 ### 4.5 When to ask the user
-Only when there is a choice to make: the review of each finished screen (4.3 step 4), marking tickets ready, a merge conflict the merger could not resolve, a ticket that failed twice, a stuck worker the watchdog flagged twice, a process the owned-process helper refused to stop (exit 4), scope or design questions a worker raised in `result.md`. Batch these into one short message.
+Only when there is a choice to make: the review of each finished screen (4.3 step 5), marking tickets ready, a merge conflict the merger could not resolve, a ticket that failed twice, a stuck worker the watchdog flagged twice, a process the owned-process helper refused to stop (exit 4), scope or design questions a worker raised in `result.md`. Batch these into one short message.
 
 ### 4.6 Watchdog
 While any ticket is `in-progress`, run `fashion:watchdog` (watchdog model) every 10 minutes:

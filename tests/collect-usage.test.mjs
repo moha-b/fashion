@@ -1,11 +1,12 @@
 // Tests for bench/collect-usage.mjs on synthetic Claude Code transcripts.
 // Run: node --test tests/collect-usage.test.mjs
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
-import { collect } from "../bench/collect-usage.mjs";
+import { spawnSync } from "node:child_process";
+import { collect, writeManifest } from "../bench/collect-usage.mjs";
 
 const dir = mkdtempSync(path.join(tmpdir(), "fashion-usage-"));
 after(() => rmSync(dir, { recursive: true, force: true }));
@@ -81,4 +82,72 @@ test("time window excludes lines outside it", () => {
   const r = collect({ project: dir, run: "t", transcripts: dir, since: "2026-11-10T11:00:00Z" });
   assert.deepEqual(Object.keys(r.models), ["claude-opus-5"]);
   assert.equal(r.models["claude-opus-5"].output, 999);
+});
+
+// Codex review of PR #9, findings 1-4.
+
+test("recollecting a run keeps the operator's outcome, revisions, failures and evidence", () => {
+  const out = path.join(dir, "rt", "manifest.json");
+  writeManifest(out, collect({ project: dir, run: "keep", transcripts: dir, session: "A" }));
+  const manifest = JSON.parse(readFileSync(out, "utf8"));
+  Object.assign(manifest.runs[0], { outcome: "pass", revisions: 2, failures: ["checker blocked once"], evidence: { approval: "ux/decisions.md#L12" }, notes: "operator note" });
+  writeFileSync(out, JSON.stringify(manifest));
+  const again = writeManifest(out, collect({ project: dir, run: "keep", transcripts: dir, session: "A" }));
+  assert.equal(again.outcome, "pass");
+  assert.equal(again.revisions, 2);
+  assert.deepEqual(again.failures, ["checker blocked once"]);
+  assert.deepEqual(again.evidence, { approval: "ux/decisions.md#L12" });
+  assert.equal(again.notes, "operator note", "unknown operator keys survive too");
+  assert.equal(again.collections, 2);
+  assert.equal(JSON.parse(readFileSync(out, "utf8")).runs.length, 1);
+});
+
+test("time bounds compare instants: fractional seconds and offsets, invalid bounds rejected", () => {
+  const t = path.join(dir, "time");
+  mkdirSync(t);
+  write(path.join(t, "S.jsonl"), [
+    assistant("2026-11-10T10:00:00.500Z", "f1", "claude-opus-5", usage(1, 100)),
+    assistant("2026-11-10T12:00:00+02:00", "f2", "claude-opus-5", usage(1, 7)), // 10:00:00Z
+  ]);
+  const frac = collect({ project: t, run: "t", transcripts: t, since: "2026-11-10T10:00:00.100Z" });
+  assert.equal(frac.models["claude-opus-5"].output, 100, "10:00:00.500Z is after 10:00:00.100Z");
+  const all = collect({ project: t, run: "t", transcripts: t, since: "2026-11-10T10:00:00Z" });
+  assert.equal(all.models["claude-opus-5"].output, 107, "the +02:00 line is exactly 10:00:00Z and counts");
+  const offset = collect({ project: t, run: "t", transcripts: t, until: "2026-11-10T11:00:00.000+01:00" });
+  assert.equal(offset.models["claude-opus-5"].output, 7, "11:00+01:00 is 10:00:00Z: the .500Z line is after it, the +02:00 line is exactly at it");
+  assert.throws(() => collect({ project: t, run: "t", transcripts: t, since: "yesterday-ish" }), /invalid --since/);
+  assert.throws(() => collect({ project: t, run: "t", transcripts: t, since: "2026-11-11T00:00:00Z", until: "2026-11-10T00:00:00Z" }), /after --until/);
+});
+
+test("a malformed record inside a transcript fails with file and line", () => {
+  const m = path.join(dir, "bad");
+  mkdirSync(m);
+  writeFileSync(path.join(m, "S.jsonl"), [
+    JSON.stringify(assistant("2026-11-10T10:00:00Z", "b1", "claude-opus-5", usage(1, 10))),
+    "not json",
+    JSON.stringify(assistant("2026-11-10T10:00:01Z", "b2", "claude-opus-5", usage(1, 10))),
+  ].join("\n") + "\n");
+  assert.throws(() => collect({ project: m, run: "t", transcripts: m }), /S\.jsonl:2: malformed transcript record/);
+});
+
+test("an unfinished final line marks the run incomplete: no total, only a labelled lower bound", () => {
+  const u = path.join(dir, "tail");
+  mkdirSync(u);
+  const file = path.join(u, "S.jsonl");
+  write(file, [assistant("2026-11-10T10:00:00Z", "u1", "claude-opus-5", usage(1, 10))]);
+  appendFileSync(file, '{"type":"assistant","timestamp":"2026-11-10T10:00:0'); // still being written
+  const r = collect({ project: u, run: "t", transcripts: u, prices });
+  assert.equal(r.complete, false);
+  assert.match(r.warnings[0], /unfinished final line/);
+  assert.equal(r.totalCostUSD, "unknown");
+  assert.equal(typeof r.lowerBoundCostUSD, "number");
+});
+
+test("the documented command works with a fresh output directory", () => {
+  const out = path.join(dir, "fresh", "results", "manifest.json");
+  const run = spawnSync(process.execPath, [new URL("../bench/collect-usage.mjs", import.meta.url).pathname,
+    "--project", dir, "--transcripts", dir, "--session", "A", "--run", "fresh-1", "--out", out], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  assert.ok(existsSync(out));
+  assert.equal(JSON.parse(readFileSync(out, "utf8")).runs[0].run, "fresh-1");
 });

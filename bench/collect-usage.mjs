@@ -13,7 +13,7 @@
 // one it is "unknown", never 0.
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -28,11 +28,47 @@ function parseArgs(argv) {
 
 export const encodeProject = (dir) => realpathSync(dir).replace(/[^a-zA-Z0-9]/g, "-");
 
-const readJsonl = (file) => readFileSync(file, "utf8").split("\n").filter(Boolean).flatMap((line) => {
-  try { return [JSON.parse(line)]; } catch { return []; }
-});
+// Parses a transcript. A malformed record inside the file is an error (with
+// file:line), because skipping it would understate usage. The one tolerated case
+// is a final line still being written by a live session (no trailing newline):
+// it is reported as a warning and makes the collection incomplete.
+function readJsonl(file) {
+  const text = readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  const entries = [];
+  const warnings = [];
+  lines.forEach((line, index) => {
+    if (!line.trim()) return;
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      const unfinishedTail = index === lines.length - 1 && !text.endsWith("\n");
+      if (!unfinishedTail) throw new Error(`${file}:${index + 1}: malformed transcript record`);
+      warnings.push(`${file}:${index + 1}: unfinished final line ignored (session still writing?)`);
+      return;
+    }
+    if (entry.timestamp !== undefined) {
+      const ms = Date.parse(entry.timestamp);
+      if (!Number.isFinite(ms)) throw new Error(`${file}:${index + 1}: invalid timestamp ${JSON.stringify(entry.timestamp)}`);
+      Object.defineProperty(entry, "ms", { value: ms, enumerable: false });
+    }
+    entries.push(entry);
+  });
+  return { entries, warnings };
+}
 
-const inWindow = (ts, since, until) => (!since || ts >= since) && (!until || ts <= until);
+// Window bounds and transcript timestamps are compared as instants, so fractional
+// seconds and time-zone offsets compare correctly.
+export function parseInstant(value, label) {
+  if (value === undefined || value === null) return null;
+  const ms = Date.parse(value);
+  if (!Number.isFinite(ms)) throw new Error(`invalid ${label} time: ${value}`);
+  return ms;
+}
+
+const inWindow = (ms, since, until) => (since === null || ms >= since) && (until === null || ms <= until);
+const iso = (ms) => (ms === null || ms === undefined ? null : new Date(ms).toISOString());
 
 // A real human turn: a user message typed by a person. Skill and command text
 // (isMeta), task notifications and other injected turns (origin) and tool results
@@ -71,12 +107,13 @@ function costOf(model, usage, prices) {
 }
 
 function summarizeFile(file, since, until, agent) {
-  const entries = readJsonl(file).filter((e) => !e.timestamp || inWindow(e.timestamp, since, until));
+  const parsed = readJsonl(file);
+  const entries = parsed.entries.filter((e) => e.ms === undefined || inWindow(e.ms, since, until));
   const byRequest = new Map(); // last line per request carries the final usage
   const times = [];
   const efforts = new Set();
   for (const e of entries) {
-    if (e.timestamp) times.push(e.timestamp);
+    if (e.ms !== undefined) times.push(e.ms);
     if (e.type !== "assistant" || !e.message?.usage) continue;
     byRequest.set(e.requestId ?? e.message.id ?? e.uuid, e);
     if (e.effort) efforts.add(e.effort);
@@ -86,8 +123,8 @@ function summarizeFile(file, since, until, agent) {
     const model = e.message.model ?? "unknown";
     addUsage((perModel[model] ??= emptyUsage()), e.message.usage);
   }
-  times.sort();
-  return { agent, file, perModel, efforts: [...efforts], start: times[0] ?? null, end: times.at(-1) ?? null, entries };
+  times.sort((a, b) => a - b);
+  return { agent, file, perModel, efforts: [...efforts], start: times[0] ?? null, end: times.at(-1) ?? null, entries, warnings: parsed.warnings };
 }
 
 // Time the run spent waiting for a person: from the last main-thread assistant
@@ -95,10 +132,10 @@ function summarizeFile(file, since, until, agent) {
 function humanWaitMs(entries) {
   let lastAssistant = null;
   let wait = 0;
-  for (const e of entries.filter((x) => !x.isSidechain && x.timestamp).sort((a, b) => a.timestamp.localeCompare(b.timestamp))) {
-    if (e.type === "assistant") lastAssistant = e.timestamp;
-    else if (isHumanTurn(e) && lastAssistant) {
-      wait += Date.parse(e.timestamp) - Date.parse(lastAssistant);
+  for (const e of entries.filter((x) => !x.isSidechain && x.ms !== undefined).sort((a, b) => a.ms - b.ms)) {
+    if (e.type === "assistant") lastAssistant = e.ms;
+    else if (isHumanTurn(e) && lastAssistant !== null) {
+      wait += e.ms - lastAssistant;
       lastAssistant = null;
     }
   }
@@ -121,10 +158,34 @@ const version = (cmd, args) => {
   return out.status === 0 ? out.stdout.trim() : "unknown";
 };
 
+// Fields the operator fills in after a run. Recollecting a run refreshes the
+// computed usage but never touches these.
+export const OPERATOR_FIELDS = ["outcome", "revisions", "failures", "evidence"];
+
+export function writeManifest(out, entry) {
+  mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  const manifest = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : { runs: [] };
+  const previous = manifest.runs.find((r) => r.run === entry.run);
+  const merged = { ...entry };
+  if (previous) {
+    for (const key of OPERATOR_FIELDS) merged[key] = previous[key];
+    for (const key of Object.keys(previous)) if (!(key in merged)) merged[key] = previous[key];
+    merged.collections = (previous.collections ?? 1) + 1;
+  } else {
+    merged.collections = 1;
+  }
+  manifest.runs = manifest.runs.filter((r) => r.run !== entry.run).concat(merged);
+  writeFileSync(out, JSON.stringify(manifest, null, 2) + "\n");
+  return merged;
+}
+
 export function collect(opts) {
   const transcripts = opts.transcripts ?? path.join(homedir(), ".claude", "projects", encodeProject(opts.project));
   if (!existsSync(transcripts)) throw new Error(`no transcripts at ${transcripts}`);
   const prices = opts.prices ? JSON.parse(readFileSync(opts.prices, "utf8")) : null;
+  const since = parseInstant(opts.since, "--since");
+  const until = parseInstant(opts.until, "--until");
+  if (since !== null && until !== null && since > until) throw new Error("--since is after --until");
   const files = [];
   const sessions = opts.session ? new Set(String(opts.session).split(",")) : null;
   for (const name of readdirSync(transcripts)) {
@@ -140,7 +201,7 @@ export function collect(opts) {
       }
     }
   }
-  const summaries = files.map(({ file, agent }) => summarizeFile(file, opts.since, opts.until, agent))
+  const summaries = files.map(({ file, agent }) => summarizeFile(file, since, until, agent))
     .filter((s) => Object.keys(s.perModel).length || s.entries.length);
 
   const agents = {};
@@ -158,21 +219,27 @@ export function collect(opts) {
   }
   const modelCosts = Object.fromEntries(Object.entries(models).map(([m, u]) => [m, { ...u, costUSD: costOf(m, u, prices) }]));
   const costs = Object.values(modelCosts).map((m) => m.costUSD);
-  const totalCostUSD = costs.length && costs.every((c) => typeof c === "number")
+  const priced = costs.length && costs.every((c) => typeof c === "number")
     ? Number(costs.reduce((a, b) => a + b, 0).toFixed(6)) : "unknown";
+  // An incomplete collection never reports a total as if it were complete.
+  const warnings = summaries.flatMap((s) => s.warnings);
+  const complete = warnings.length === 0;
+  const totalCostUSD = complete ? priced : "unknown";
+  const lowerBoundCostUSD = complete ? null : priced;
 
-  const starts = summaries.map((s) => s.start).filter(Boolean).sort();
-  const ends = summaries.map((s) => s.end).filter(Boolean).sort();
+  const starts = summaries.map((s) => s.start).filter((x) => x !== null).sort((a, b) => a - b);
+  const ends = summaries.map((s) => s.end).filter((x) => x !== null).sort((a, b) => a - b);
   const mainEntries = summaries.filter((s) => s.agent === "main").flatMap((s) => s.entries);
   return {
     run: opts.run, variant: opts.variant ?? null, commit: opts.commit ?? null,
     collectedAt: new Date().toISOString(),
     window: { since: opts.since ?? null, until: opts.until ?? null, sessions: opts.session ?? null },
-    start: starts[0] ?? null, end: ends.at(-1) ?? null,
-    wallMs: starts[0] && ends.length ? Date.parse(ends.at(-1)) - Date.parse(starts[0]) : null,
+    start: iso(starts[0]), end: iso(ends.at(-1)),
+    wallMs: starts.length && ends.length ? ends.at(-1) - starts[0] : null,
+    complete, warnings,
     humanWaitMs: humanWaitMs(mainEntries),
     efforts: [...new Set(summaries.flatMap((s) => s.efforts))],
-    models: modelCosts, agents, totalCostUSD,
+    models: modelCosts, agents, totalCostUSD, lowerBoundCostUSD,
     pricesFile: opts.prices ?? null,
     tools: { claude: version("claude", ["--version"]), node: process.version },
     inputs: opts.inputs ? hashInputs(opts.inputs) : null,
@@ -187,12 +254,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const opts = parseArgs(process.argv.slice(2));
     if (!opts.project || !opts.run) throw new Error("--project and --run are required");
     const entry = collect(opts);
-    if (opts.out) {
-      const manifest = existsSync(opts.out) ? JSON.parse(readFileSync(opts.out, "utf8")) : { runs: [] };
-      manifest.runs = manifest.runs.filter((r) => r.run !== entry.run).concat(entry);
-      writeFileSync(opts.out, JSON.stringify(manifest, null, 2) + "\n");
-    }
-    console.log(JSON.stringify({ run: entry.run, totalCostUSD: entry.totalCostUSD, wallMs: entry.wallMs, humanWaitMs: entry.humanWaitMs,
+    if (opts.out) writeManifest(opts.out, entry);
+    for (const warning of entry.warnings) process.stderr.write(`collect-usage: warning: ${warning}\n`);
+    console.log(JSON.stringify({ run: entry.run, complete: entry.complete, totalCostUSD: entry.totalCostUSD, lowerBoundCostUSD: entry.lowerBoundCostUSD, wallMs: entry.wallMs, humanWaitMs: entry.humanWaitMs,
       models: Object.fromEntries(Object.entries(entry.models).map(([m, u]) => [m, { requests: u.requests, output: u.output, costUSD: u.costUSD }])) }));
   } catch (error) {
     process.stderr.write(`collect-usage: ${error.message}\n`);

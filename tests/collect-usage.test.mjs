@@ -151,3 +151,31 @@ test("the documented command works with a fresh output directory", () => {
   assert.ok(existsSync(out));
   assert.equal(JSON.parse(readFileSync(out, "utf8")).runs[0].run, "fresh-1");
 });
+
+// Codex recheck of eba6796: warnings from files with no usable usage.
+
+test("a subagent transcript that is only an unfinished line still marks the run incomplete", () => {
+  const w = path.join(dir, "warn-only");
+  mkdirSync(path.join(w, "A", "subagents"), { recursive: true });
+  write(path.join(w, "A.jsonl"), [assistant("2026-11-10T10:00:00Z", "w1", "claude-opus-5", usage(10, 20))]);
+  writeFileSync(path.join(w, "A", "subagents", "agent-new.jsonl"), '{"type":"assistant","timestamp":"2026-11-10T10:00:01');
+  const r = collect({ project: w, run: "t", transcripts: w, session: "A", prices });
+  assert.equal(r.complete, false);
+  assert.match(r.warnings[0], /agent-new\.jsonl:1: unfinished final line/);
+  assert.equal(r.totalCostUSD, "unknown");
+  assert.equal(r.lowerBoundCostUSD, (10 * 1 + 20 * 2) / 1e6, "the valid request is the lower bound");
+  assert.ok(r.transcripts.some((f) => f.endsWith("agent-new.jsonl")), "the broken file is listed");
+});
+
+test("an unfinished tail stays a warning when every valid record is outside the window", () => {
+  const o = path.join(dir, "warn-window");
+  mkdirSync(o);
+  const file = path.join(o, "S.jsonl");
+  write(file, [assistant("2026-11-10T08:00:00Z", "o1", "claude-opus-5", usage(1, 5))]);
+  appendFileSync(file, '{"type":"assistant","timestamp":"2026-11-10T10:00:0');
+  const r = collect({ project: o, run: "t", transcripts: o, since: "2026-11-10T09:00:00Z", prices });
+  assert.equal(r.complete, false);
+  assert.match(r.warnings[0], /S\.jsonl:2: unfinished final line/);
+  assert.equal(r.totalCostUSD, "unknown");
+});
+

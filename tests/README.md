@@ -56,4 +56,3 @@ They also cover four cases from the review of PR #9:
 - a malformed interior line fails with file:line;
 - an unfinished final line marks the run incomplete, with only a lower bound for cost;
 - the documented `--out` path works in a fresh folder.
-

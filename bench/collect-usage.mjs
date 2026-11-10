@@ -202,7 +202,9 @@ export function collect(opts) {
     }
   }
   const summaries = files.map(({ file, agent }) => summarizeFile(file, since, until, agent))
-    .filter((s) => Object.keys(s.perModel).length || s.entries.length);
+    // Keep a file that only produced warnings (an unfinished line, or every valid
+    // record outside the window): its warning must still mark the run incomplete.
+    .filter((s) => Object.keys(s.perModel).length || s.entries.length || s.warnings.length);
 
   const agents = {};
   const models = {};

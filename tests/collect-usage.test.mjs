@@ -178,4 +178,3 @@ test("an unfinished tail stays a warning when every valid record is outside the 
   assert.match(r.warnings[0], /S\.jsonl:2: unfinished final line/);
   assert.equal(r.totalCostUSD, "unknown");
 });
-

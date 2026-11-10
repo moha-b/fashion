@@ -158,7 +158,7 @@
   {
     "id": "screen-review-no-changes",
     "role": "router",
-    "context": "Phase 4. home is in review; the critic reviewed it and the user was asked 'Any changes to Home? If none, I'll mark it accepted and start Product.' The user answered: 'no changes, looks good'. Product has no tickets yet. Choose the next immediate action.",
+    "context": "Phase 4. home is in review; the critic reviewed it and siteType multi; product and cart are planned. The user was asked 'Any changes to Home? If none, which screen next: Product (recommended), Cart?' The user answered: 'no changes, do the product page next'. Product has no tickets yet. Choose the next immediate action.",
     "expected": {"flag":"none","action":"ticket-next-screen","stage":null,"attempt":null}
   },
   {
@@ -208,5 +208,23 @@
     "role": "router",
     "context": "Resume. Screen home status review, round 1. ux/visual-review-home-1.md names commit abc123, but a revision has since been merged and the current HEAD is def456. The user has not answered. Choose the next immediate action.",
     "expected": {"flag":"none","action":"launch-visual-critic","stage":null,"attempt":null}
+  },
+  {
+    "id": "screen-no-changes-next-not-named",
+    "role": "router",
+    "context": "Phase 4, siteType multi. home is in review with a complete critique at current HEAD. product and cart are planned. The user was asked 'Any changes to Home? If none, which screen next: Product (recommended), Cart?' and answered only: 'no changes'. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ask-user","stage":null,"attempt":null}
+  },
+  {
+    "id": "landing-page-accepted",
+    "role": "router",
+    "context": "Phase 4, siteType landing. The only screen, landing, was in review; the user was asked 'Any changes to Landing? If none, I'll mark it accepted and run the final review.' and answered 'no changes'. No planned screens exist. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"launch-visual-critic","stage":null,"attempt":null}
+  },
+  {
+    "id": "screen-user-names-unlisted-screen",
+    "role": "router",
+    "context": "Phase 4, siteType multi. home is in review with a complete critique at current HEAD; product and cart are planned. The user answered the screen question: 'no changes, next do the checkout page'. Checkout is not in state.screens yet and has no tickets. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ticket-next-screen","stage":null,"attempt":null}
   }
 ]

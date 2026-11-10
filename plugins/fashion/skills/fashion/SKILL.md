@@ -25,6 +25,8 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
   "loop": 0,
   "platform": null,
   "mobileStack": null,
+  "siteType": null,
+  "siteUrl": null,
   "decisions": [],
   "openQuestions": [],
   "references": [],
@@ -38,7 +40,7 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
   "currentScreen": null
 }
 ```
-- `platform` is `web` or `mobile`. `mobileStack` is `flutter` or `swiftui`. `references` lists saved reference slugs. `postedCompetitors` counts entries already shown to the user.
+- `platform` is `web` or `mobile`. `mobileStack` is `flutter` or `swiftui`. `siteType` is `landing` (one page) or `multi` (several screens, for example e-commerce or an app). `siteUrl` is the user's own current site, if they gave one. `references` lists saved reference slugs. `postedCompetitors` counts entries already shown to the user.
 - `models` picks the model per role. Values are `opus`, `sonnet`, `haiku` or `fable`. A missing key means the default above.
 - `git` is `null` (not asked yet), `true` (the folder is a git repo and phase 4 uses worktrees) or `false` (the user declined; workers run one at a time in the folder).
 - `maxWorkers` caps how many build workers run at once (within the current screen).
@@ -58,8 +60,10 @@ Whenever you launch one of these agents, pass the role's model from `state.model
 1. Read what the user gave: URL, screenshots, code, decks, files in the folder. Use it.
 2. If they gave enough, restate the product in a few lines (what, who, market, tone) and ask for a yes. If not enough, run the `fashion:grilling` skill.
 3. Settle the platform: web or mobile. One only. If mobile, ask Flutter or SwiftUI. Give a recommended answer.
-4. Write `.fashion/brief.md`: product, audience, market, tone, platform, stack, constraints, what exists already, primary user task, success criteria, and available brand/media assets. Mark unknown critical assets as open questions.
-5. Show the brief. On yes, set phase 2.
+4. Settle the site type: `landing` (a single landing page) or `multi` (several screens, for example e-commerce, a marketplace or an app). Infer it from the URL or description and give a recommended answer.
+5. Images and copy. If the user gave the URL of their own current site, ask once whether its images and copy may be reused in the new design (they must own them or have the rights). On yes, save `siteUrl`, collect the site's images into `references/own-site/` (awwwards `capture_live_site` for the pages, plus the image files those pages reference), and write `references/own-site/sources.md` listing each file, its source URL and the page it came from. Only these images may be used as product assets. Images from any other site are references and never go into the product. If the user says no or has no site, list the missing images and copy as open questions.
+6. Write `.fashion/brief.md`: product, audience, market, tone, platform, stack, site type, the user's site URL, constraints, what exists already, primary user task, success criteria, and available brand/media assets (with `references/own-site/` when collected). Mark unknown critical assets as open questions.
+7. Show the brief. On yes, set phase 2.
 
 ## Phase 2: Research
 1. Launch the `fashion:competitor-researcher` agent in the background (research model) with a prompt naming the brief path. Do not wait.
@@ -113,13 +117,18 @@ Check every new component against what exists. If it would repeat the markup or 
 
 ### 4.3 Screen by screen
 Build one screen at a time, and let the user see each finished screen before the next one starts.
-1. With the components list (4.2), write the screen order in `state.screens` from the primary journey in the brief and `ux/decisions.md`. Home comes first; if the product has no home screen, the journey's entry screen does. Show the order with the components list and get one yes for both.
+1. With the components list (4.2), write the screen list in `state.screens` and show both for one yes.
+   - `siteType: landing`: one screen, `landing`. There are no other screens.
+   - `siteType: multi`: home first (the journey's entry screen when there is no home). The other screens from the journey and `ux/decisions.md` are listed as `planned` with no fixed order; the user picks the next one after each review.
 2. Set the first screen `building` and `currentScreen` to its id. Ticket only that screen (4.3.1). Foundation tickets (scaffold, tokens, primitives, extractions) belong to the first screen.
 3. Assign and check its tickets as in 4.4. Workers may run in parallel within the screen; never start tickets for another screen.
 4. When every ticket of the screen is `done`: increment `round`, record the current commit in `commit`, set the screen `critique`, launch `fashion:visual-critic` for that screen, round and commit at desktop and phone against the accepted baseline, and save its task ID in `criticTask` at once.
-5. When the critic returns, check that `ux/visual-review-<screen>-<round>.md` exists and names that commit. Then set the screen's `status` to `review`, set its `review` field to that path, and clear `criticTask`. Only now show the user the URL to open, the screenshot paths, and the critic's findings (up to three), and ask one question: "Any changes to <screen>? If none, I'll mark it accepted and start <next screen>." Never ask that question for a screen that is not `review`, or whose review names an older commit than the code now on main.
+5. When the critic returns, check that `ux/visual-review-<screen>-<round>.md` exists and names that commit. Then set the screen's `status` to `review`, set its `review` field to that path, and clear `criticTask`. Only now show the user the URL to open, the screenshot paths, and the critic's findings (up to three), and ask one question. While `planned` screens remain: "Any changes to <screen>? If none, which screen next: <recommended screen> (recommended), <the other planned screens>?" When none remain: "Any changes to <screen>? If none, I'll mark it accepted and run the final review." Never ask that question for a screen that is not `review`, or whose review names an older commit than the code now on main.
 6. Changes: set the screen back to `building` and handle them as revisions of this screen (see Close for who does what: a reopened ticket and a `fashion:reproducer` attempt within its scope, or a draft ticket for new scope that the user marks ready). Return to step 4 when they are done; the next round reviews the new commit.
-7. No changes: set the screen `accepted` and record it in `ux/decisions.md`. That answer also authorizes the next screen: set it `building`, ticket it, mark its tickets `ready` (the question said so), show the board in one line, and assign. When no screen is left, go to Close.
+7. No changes: set the screen `accepted` and record it in `ux/decisions.md`.
+   - If the answer names the next screen, that authorizes it: set it `building` and `currentScreen`, ticket it, mark its tickets `ready`, show the board in one line, and assign. A screen not on the list is added as `planned` first.
+   - If the answer names no screen while `planned` screens remain, ask which one next (one question) before ticketing anything.
+   - When no screen is left (always the case for a landing page), go to Close.
 
 A restart never skips the critic. On resume: `building` continues the screen's tickets (step 4 once all are done). `critique` with a live critic waits for it; with a terminated critic it collects a matching review (step 5) or launches a new critic for the same round and commit, never asking the user. `review` asks the question again only when its review file exists and names the code now on main (current HEAD, or `no git` with no changes since); if the code moved or the file is missing, it goes back to step 4.
 

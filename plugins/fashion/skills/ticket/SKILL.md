@@ -58,7 +58,7 @@ Status: draft → ready (set by the user) → in-progress → done
 |---|---|---|---|---|---|---|---|
 | T00-scaffold | home | Scaffold the app | draft | solo | — | | |
 ```
-New tickets start as `draft`. Only the user moves a ticket to `ready` (they may tell the router, which updates the board). The one standing authorization: when the user answers a screen review with no changes, that answer marks the next screen's tickets `ready` (the router's question says so). The router sets `in-progress` and `done`.
+New tickets start as `draft`. Only the user moves a ticket to `ready` (they may tell the router, which updates the board). The one standing authorization: when the user answers a screen review with no changes and names the next screen, that answer marks that screen's tickets `ready`. The router sets `in-progress` and `done`.
 The router also creates `tickets/<id>/state.json` at stage `draft` using the schema in the Fashion skill. It is the source of truth for stage, attempt, task and commit; the board summarizes it. When the user marks a ticket ready, update both state and board.
 
 ## Return

@@ -1,8 +1,32 @@
 # Fashion
 
-A phased UI-design agent for Claude Code. It interviews you, researches competitors in the background, helps you choose a direction, then builds the UI for web (Next.js), Flutter or SwiftUI.
+A phased UI-design workflow for Claude Code and Codex. It interviews you, researches competitors, helps you choose a direction, then builds the UI for web (Next.js), Flutter or SwiftUI.
 
 ## Install
+
+### Codex
+
+In a current Codex CLI with plugin support:
+
+```sh
+codex plugin marketplace add moha-b/fashion
+codex plugin add fashion@fashion
+```
+
+For a local checkout, use `codex plugin marketplace add /absolute/path/to/fashion` instead. In Codex desktop, select the Fashion marketplace in the plugin browser and install Fashion. Open a new chat in your product folder, select the `fashion:fashion` skill, and use:
+
+```text
+$fashion:fashion setup
+$fashion:fashion start
+$fashion:fashion resume
+$fashion:fashion status
+```
+
+Codex inherits your selected model and permissions. It uses native subagents when available, explicit Git worktrees, and the shared evidence/recovery workflow. With no subagent tools, it runs roles sequentially and labels checks as self-review. The plugin does not change your default agent, write Claude settings, or install a Codex router-write hook. Setup checks MCP/browser availability before relying on it; missing required capabilities remain explicit blockers. The usage collector under `bench/` supports Claude transcripts only.
+
+Packaging follows the [OpenAI plugin format](https://developers.openai.com/plugins/build/plugins); role execution follows [Codex subagent behavior](https://learn.chatgpt.com/docs/agent-configuration/subagents). See [the runtime adapter](plugins/fashion/codex/runtime.md) for host differences.
+
+### Claude Code
 
 ```
 /plugin marketplace add moha-b/fashion
@@ -29,7 +53,7 @@ Other commands: `/fashion:resume` (continue after a restart), `/fashion:status` 
 
 Every phase ends with your explicit yes.
 
-## Agents and models
+## Claude Code agents and models
 
 | Role | Agents | Default model |
 |---|---|---|
@@ -40,7 +64,7 @@ Every phase ends with your explicit yes.
 
 `/fashion:start` asks once which models to use and saves them in `.fashion/state.json` under `models` (`research`, `implement`, `watchdog`). `/fashion:status` shows them.
 
-## What it touches
+## Claude Code setup and project files
 
 - `/fashion:setup` writes to your home directory, after one confirmation: skills into `~/.agents/skills/` and symlinks in `~/.claude/skills/`. It skips identical skills, asks before replacing different ones, and installs no software. It reports missing prerequisites (node, Playwright, Xcode, Flutter).
 - `/fashion:start` writes only in the current folder: `.fashion/`, `research/`, `ux/`, `references/` and `.claude/settings.json` (pre-allows WebSearch, WebFetch and this plugin's MCP tools). It never runs `git init`; the router offers that once, before phase 4, and commits planning files and merges only after you say yes.
@@ -49,6 +73,15 @@ Every phase ends with your explicit yes.
 ## Regression checks
 
 Recovery and browser-fallback decision fixtures live in [tests/README.md](tests/README.md). They cover watchdog, resume, replacement workers and final visual revisions. The optional model run checks the shipped prompts; it does not replace live browser and full-workflow testing.
+
+Codex initialization and host parsing checks:
+
+```sh
+node --test tests/codex-project.test.mjs
+FASHION_CODEX_TESTS=1 node --test tests/codex-plugin.test.mjs
+```
+
+The second command requires a current `codex` executable. It calls the local app-server's `plugin/read` parser without installing a plugin, running a model, or connecting to MCP servers. These checks do not establish a full live design pilot.
 
 ## Licensing
 

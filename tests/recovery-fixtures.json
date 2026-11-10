@@ -226,5 +226,23 @@
     "role": "router",
     "context": "Phase 4, siteType multi. home is in review with a complete critique at current HEAD; product and cart are planned. The user answered the screen question: 'no changes, next do the checkout page'. Checkout is not in state.screens yet and has no tickets. Choose the next immediate action.",
     "expected": {"flag":"none","action":"ticket-next-screen","stage":null,"attempt":null}
+  },
+  {
+    "id": "resume-v040-site-type",
+    "role": "router",
+    "context": "Resume phase 4 from plugin 0.4.0. state already has screens: home building, product planned, cart planned; currentScreen home. siteType and siteUrl keys are absent. Brief describes an ecommerce catalog, product detail and cart. All tickets are done, no active tasks. Choose the next immediate action before continuing the screen workflow.",
+    "expected": {"flag":"none","action":"migrate-state","stage":null,"attempt":null}
+  },
+  {
+    "id": "resume-accepted-awaiting-screen",
+    "role": "router",
+    "context": "Resume phase 4, siteType multi. currentScreen home is accepted, product and cart planned. ux/decisions.md records the user said no changes, and the router asked which screen next. No answer has arrived, no tasks active, no next-screen tickets exist. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ask-user","stage":null,"attempt":null}
+  },
+  {
+    "id": "followup-selects-next-screen",
+    "role": "router",
+    "context": "Phase 4, siteType multi. home is accepted. After the user said no changes without naming a screen, the router asked which next: Product or Cart? User now answers Product. Product has no tickets, cart is planned. Choose the next immediate action.",
+    "expected": {"flag":"none","action":"ticket-next-screen","stage":null,"attempt":null}
   }
 ]

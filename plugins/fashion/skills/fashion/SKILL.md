@@ -6,7 +6,7 @@ description: Phased UI-design agent. Runs interview, research, direction and bui
 
 Four phases: 1 interview, 2 research, 3 direction (loops), 4 build. State lives in `.fashion/` in the current folder.
 
-This playbook is run by the `fashion:router` agent (the plugin's default main agent). The router talks to the user and hands out work. It never writes app code. If you are not running as the router (for example the session was started with another `--agent`), do phases 1 to 3 as written, and before phase 4 tell the user to restart with `claude --agent fashion:router`. Stop there.
+In Claude Code, this playbook is run by the `fashion:router` agent (the plugin's default main agent). The router talks to the user and hands out work. It never writes app code. If a Claude session is not running as the router, do phases 1 to 3 as written, and before phase 4 tell the user to restart with `claude --agent fashion:router`. Stop there. In Codex, enter through `codex/skills/fashion/SKILL.md` and apply `codex/runtime.md` to all host-specific instructions below; the current chat coordinates the same workflow without restarting Claude.
 
 ## Rules
 - Never skip a confirm step. Each phase ends with an explicit yes from the user.
@@ -54,14 +54,14 @@ This playbook is run by the `fashion:router` agent (the plugin's default main ag
 | implement | `fashion:prototyper`, `fashion:visual-critic`, `fashion:builder`, `fashion:reproducer`, `fashion:merger`, `fashion:checker` | sonnet | `state.models.implement` |
 | watchdog | `fashion:watchdog` | sonnet | `state.models.watchdog` |
 
-Whenever you launch one of these agents, pass the role's model from `state.models` as the Agent tool's `model`. Fall back to the default when the key is missing.
+These are Claude Code defaults. Whenever you launch one of these agents in Claude Code, pass the role's model from `state.models` as the Agent tool's `model`. Fall back to the default when the key is missing or is `inherit` from a Codex-created project. Other unsupported model IDs require a supported user choice; never pass a Codex model ID to Claude. Codex uses the model/delegation rules in `codex/runtime.md` instead.
 
 ## Phase 1: Interview
 1. Read what the user gave: URL, screenshots, code, decks, files in the folder. Use it.
 2. If they gave enough, restate the product in a few lines (what, who, market, tone) and ask for a yes. If not enough, run the `fashion:grilling` skill.
 3. Settle the platform: web or mobile. One only. If mobile, ask Flutter or SwiftUI. Give a recommended answer.
 4. Settle the site type: `landing` (a single landing page) or `multi` (several screens, for example e-commerce, a marketplace or an app). Infer it from the URL or description and give a recommended answer.
-5. Images and copy. If the user gave the URL of their own current site, ask once whether its images and copy may be reused in the new design (they must own them or have the rights). On yes, save `siteUrl`, collect the site's images into `references/own-site/` (awwwards `capture_live_site` for the pages, plus the image files those pages reference), and write `references/own-site/sources.md` listing each file, its source URL and the page it came from. Only these images may be used as product assets. Images from any other site are references and never go into the product. If the user says no or has no site, list the missing images and copy as open questions.
+5. Images and copy. Record an explicitly identified own-site URL as `siteUrl`, independently of reuse permission. If the user gave their own current site, ask once whether its images and copy may be reused in the new design (they must own them or have the rights). On yes, collect images and copy into `references/own-site/` (awwwards `capture_live_site` for the pages, plus the image files those pages reference), and write `references/own-site/sources.md` listing each saved file, its source URL and the page it came from. User-provided files and separately approved owned/licensed assets may also be used; record their source and reuse approval. Competitor/reference-site images stay references unless the user explicitly confirms reuse rights. If the user declines site reuse or has no site, use the approved assets already supplied and list only the remaining gaps as open questions.
 6. Write `.fashion/brief.md`: product, audience, market, tone, platform, stack, site type, the user's site URL, constraints, what exists already, primary user task, success criteria, and available brand/media assets (with `references/own-site/` when collected). Mark unknown critical assets as open questions.
 7. Show the brief. On yes, set phase 2.
 
@@ -130,7 +130,7 @@ Build one screen at a time, and let the user see each finished screen before the
    - If the answer names no screen while `planned` screens remain, ask which one next (one question) before ticketing anything.
    - When no screen is left (always the case for a landing page), go to Close.
 
-A restart never skips the critic. On resume: `building` continues the screen's tickets (step 4 once all are done). `critique` with a live critic waits for it; with a terminated critic it collects a matching review (step 5) or launches a new critic for the same round and commit, never asking the user. `review` asks the question again only when its review file exists and names the code now on main (current HEAD, or `no git` with no changes since); if the code moved or the file is missing, it goes back to step 4.
+A restart never skips the critic. On resume: `building` continues the screen's tickets (step 4 once all are done). `critique` with a live critic waits for it; with a terminated critic it collects a matching review (step 5) or launches a new critic for the same round and commit, never asking the user. `review` asks the question again only when its review file exists and names the code now on main (current HEAD, or `no git` with no changes since); if the code moved or the file is missing, it goes back to step 4. If `currentScreen` is already `accepted` and planned screens remain, preserve acceptance and ask only which screen next. A saved explicit next-screen choice authorizes that screen; reconcile existing tickets before creating any. The answer to this follow-up has the same authorization as step 7; never select a screen from list order alone. If all screens are accepted, continue Close without repeating screen approval.
 
 ### 4.3.1 Tickets
 Run the `fashion:ticket` skill for the current screen only. It writes `tickets/<id>/rd.md`, `tickets/<id>/eval.md` and `tickets/board.md`, all as `draft`. Each ticket names the components it creates or reuses from `ux/components.md`. Show the board. Tell the user to mark the tickets they want built as `ready` (they can say "all ready" and you update the board). Only `ready` tickets are assigned.

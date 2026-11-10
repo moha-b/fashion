@@ -30,6 +30,19 @@ Each fixture declares `role: watchdog`, `role: router` or `role: checker`. The m
 
 Fixtures describe filesystem, task and Git snapshots. This suite tests prompt decisions, not actual file writes, Git operations, task termination or browser execution. It does not establish deterministic schema enforcement, crash safety or improved design quality. Those still need live integration runs and repeated comparisons on the same briefs/assets, with preference/task outcomes, revisions, time, cost and model versions recorded.
 
+The shared suite also covers 0.4.0 projects with screen state but no site type, restarting while an accepted screen awaits the next-screen choice, and the follow-up choice authorizing the next screen. The runner evaluates these shared instructions in Claude; it does not validate Codex tool execution.
+
+## Codex
+
+```sh
+node --test tests/codex-project.test.mjs
+FASHION_CODEX_TESTS=1 node --test tests/codex-plugin.test.mjs
+```
+
+Initialization tests exercise the CLI, repeated starts, existing content and host settings, path collisions, and symlink invocation. They compare new state with the shared workflow contract. The opt-in integration test needs a current Codex CLI and permission to start its local app-server. It uses `plugin/read` to check real manifest/skill/MCP discovery and confirm that Claude hooks are not loaded. It does not install the plugin, start MCP servers, or call a model.
+
+For behavioral validation, use the installed Codex entry skill with an isolated project: start from supplied local assets without a website, inspect read-only status, and resume an accepted screen with no next-screen choice. Check files, approvals and next actions. Report actual coverage separately from a full research/prototype/build/browser pilot; a successful parser or initialization test does not establish design quality.
+
 ## Process ownership (real subprocesses)
 
 `plugins/fashion/scripts/owned-process.mjs` starts and stops dev servers with a recorded identity (pid, process group, start time, working directory). Its tests start real servers, including a child process in the same group, and check that they actually exit:

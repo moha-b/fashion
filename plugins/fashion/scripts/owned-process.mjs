@@ -183,10 +183,26 @@ async function start(opts) {
     fail(cleaned ? 1 : 4, `could not record ownership (${error.message}); launched group ${pgid} ${cleaned ? "stopped" : "may still be running"}`);
   }
 
-  // The supervisor exits only once the whole group is empty, so an early exit
-  // means nothing is left running.
+  // A supervisor that ends normally does so only once its group is empty, but it
+  // can also be killed or crash. Never take its exit as proof: inspect the group
+  // before marking the record exited, and keep it recoverable otherwise.
   const early = await Promise.race([exited, sleep(500).then(() => undefined)]);
   if (early !== undefined) {
+    let remaining;
+    try {
+      remaining = groupMembers(pgid);
+    } catch (error) {
+      record.note = `supervisor exited during startup (code ${early}); could not inspect group ${pgid}: ${error.message}`;
+      save(record);
+      console.log(JSON.stringify({ pid: pgid, owner: record.owner, result: "inspection-failed" }));
+      fail(4, `${record.note}; record kept as running for recovery`);
+    }
+    if (remaining.length) {
+      record.note = `supervisor exited during startup (code ${early}) while ${remaining.length} process(es) remain in group ${pgid}; ownership cannot be proven, left running`;
+      save(record);
+      console.log(JSON.stringify({ pid: pgid, owner: record.owner, result: "unverified" }));
+      fail(4, `${record.note}; record kept as running for recovery`);
+    }
     record.status = "exited";
     record.stoppedAt = new Date().toISOString();
     record.note = `exited at once with code ${early}`;

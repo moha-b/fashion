@@ -120,6 +120,40 @@ test("supervisor gone while processes remain: stop refuses, keeps the record, to
   assert.match(saved.note, /ownership cannot be proven/);
 });
 
+test("supervisor killed during the startup window: start refuses, record stays recoverable, stop refuses (Codex P2)", async () => {
+  const pidFile = path.join(root, "t09-command.pid");
+  const launch = spawn(process.execPath, [script, "start", "--root", root, "--owner", "T09-startup", "--role", "checker",
+    "--attempt", "1", "--cwd", root, "--log", path.join(root, "T09.log"), "--",
+    ...node(`require("fs").writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); setInterval(()=>{},1000)`)],
+    { stdio: ["ignore", "pipe", "pipe"] });
+  let stdout = "", stderr = "";
+  launch.stdout.on("data", (d) => (stdout += d));
+  launch.stderr.on("data", (d) => (stderr += d));
+  const exited = new Promise((resolve) => launch.once("exit", resolve));
+  const dir = path.join(root, ".fashion", "processes");
+  let recordFile;
+  for (let i = 0; i < 300 && !recordFile; i++) {
+    await sleep(5);
+    const found = readdirSync(dir).find((f) => f.startsWith("T09-startup"));
+    try { readFileSync(pidFile); if (found) recordFile = path.join(dir, found); } catch {}
+  }
+  assert.ok(recordFile, "record and command exist inside the startup window");
+  const supervisor = JSON.parse(readFileSync(recordFile, "utf8")).pid;
+  groups.push(supervisor);
+  process.kill(supervisor, "SIGKILL");
+  assert.equal(await exited, 4, `start must refuse, not report success or a clean exit: ${stderr}`);
+  assert.match(stdout, /"result":"unverified"/);
+  const command = Number(readFileSync(pidFile, "utf8"));
+  assert.equal(alive(command), true, "the surviving command is left running, not killed unverified");
+  const saved = JSON.parse(readFileSync(recordFile, "utf8"));
+  assert.equal(saved.status, "running", "record stays recoverable");
+  assert.match(saved.note, /during startup.*ownership cannot be proven/);
+  const stop = helper("stop", "--root", root, "--owner", "T09-startup");
+  assert.equal(stop.status, 4, "stop must not report success");
+  assert.match(stop.stdout, /"result":"unverified"/);
+  assert.equal(alive(command), true);
+});
+
 test("PID reuse: a record whose start time no longer matches is refused and the process is left alone", async () => {
   const out = start("T06-reused", node("setInterval(()=>{},1000)"));
   assert.equal(out.status, 0, out.stderr);

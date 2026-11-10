@@ -61,13 +61,28 @@
   },
   {
     "id": "candidates-exported-no-critic",
-    "context": "Schema 2, phase direction, round 1. Three candidates are exported to ux/evidence/direction-1/a.png, b.png and c.png. critic.round 0 and critic.taskId null. Nothing has been shown to the user yet.",
+    "context": "Schema 2, phase direction, round 1. Three candidates are exported to ux/evidence/direction-1/a.png, b.png and c.png. critic.kind null and critic.taskId null. Nothing has been shown to the user yet.",
     "expected": { "action": "launch-visual-critic", "phase": "direction" }
   },
   {
     "id": "design-feedback",
-    "context": "Schema 2, phase design. Every frame is generated and exported, the critic's review is saved, and the set was shown to the user. The user writes: 'On the product screen, make add-to-cart sticky on mobile and drop the second banner.'",
+    "context": "Schema 2, phase design, design.round 1, every screen round 0. Every frame is generated and exported, the critic's review is saved, and the set was shown to the user. The user writes: 'On the product screen, make add-to-cart sticky on mobile and drop the second banner.'",
     "expected": { "action": "edit-screens", "phase": "design" }
+  },
+  {
+    "id": "consistency-fix-stale-export",
+    "context": "Schema 2, phase design, design.round 1. Every frame was generated and exported to ux/evidence/design-1/. The consistency check found drift on home, and apply_design_system just changed the home desktop and mobile frames; their export fields are now null. The critic has not run and nothing has been shown to the user.",
+    "expected": { "action": "export-previews", "phase": "design" }
+  },
+  {
+    "id": "resume-mid-revision",
+    "context": "Resume of a schema-2 project. Phase design, design.round 3 (saved before the edits), product screen round 2. edit_screens on the product frames completed before the restart; their toolRef fields are updated and their export fields are null. No critic is running.",
+    "expected": { "action": "export-previews", "phase": "design" }
+  },
+  {
+    "id": "third-revision-after-resume",
+    "context": "Resume of a schema-2 project. Phase design, design.round 3, product screen round 2 after two user-requested revision rounds. Every frame has a current export, and the design-3 review is saved and was shown. The user writes: 'Product still feels off, change the gallery again.'",
+    "expected": { "action": "ask-user", "phase": "design" }
   },
   {
     "id": "design-approved",

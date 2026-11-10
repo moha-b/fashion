@@ -37,7 +37,7 @@ done
 test "$failed" -eq 0
 ```
 
-Fixtures cover: migrating a build-workflow project with tickets in flight and a finished build-workflow project; continuing a migrated project by recreating its baseline in the design tool; a missing, unauthorized or wrong backend (setup is reported, never a code fallback or an automatic switch); reusing saved research; one researcher per brief and no duplicate on resume; capturing a user reference; a timed-out Stitch generation (inspect before retrying); Stitch returning HTML (export images only); critique before the direction gate; design edits; the handoff gates; and a request for an implementation after handoff (declined).
+Fixtures cover: migrating a build-workflow project with tickets in flight and a finished build-workflow project; continuing a migrated project by recreating its baseline in the design tool; a missing, unauthorized or wrong backend (setup is reported, never a code fallback or an automatic switch); reusing saved research; one researcher per brief and no duplicate on resume; capturing a user reference; a timed-out Stitch generation (inspect before retrying); Stitch returning HTML (export images only); critique before the direction gate; design edits; previews refreshed after consistency fixes and edits before critique or approval; revision rounds persisted across a resume, including the two-round limit; the handoff gates; and a request for an implementation after handoff (declined).
 
 ## Codex
 

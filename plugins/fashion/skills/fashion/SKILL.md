@@ -36,8 +36,9 @@ The `fashion:router` agent (the plugin's default main agent) runs this playbook 
   "decisions": [],
   "openQuestions": [],
   "direction": { "round": 0, "candidates": [], "chosen": null },
+  "design": { "round": 0 },
   "screens": [],
-  "critic": { "taskId": null, "round": 0 },
+  "critic": { "taskId": null, "kind": null },
   "approvals": { "brief": false, "direction": false, "screens": false, "handoff": false },
   "models": { "research": "opus", "critic": "sonnet" },
   "legacy": null
@@ -49,7 +50,8 @@ The `fashion:router` agent (the plugin's default main agent) runs this playbook 
 - `research.status`: `pending`, `running`, `done`, `partial` (incomplete legacy research, reused as is), `reused` or `skipped`. `research.taskId`: the running researcher.
 - `direction.candidates`: `{"id": "a", "label": "<direction name>", "toolRef": "<screen or frame id>", "export": "ux/evidence/direction-<round>/a.png"}`. `direction.chosen`: a candidate id.
 - `screens`: `{"id": "home", "title": "Home", "states": ["default"], "frames": [{"state": "default", "device": "desktop", "toolRef": null, "export": null}], "status": "planned" | "generated" | "approved", "round": 0}`.
-- `critic`: the running critic's task ID and the last review round.
+- `critic`: the running critic's task ID and the review kind it was given (`direction-<n>` or `design-<n>`).
+- **Rounds and fresh previews.** `direction.round` and `design.round` number review rounds. Each round has its own evidence folder (`ux/evidence/direction-<n>/`, `ux/evidence/design-<n>/`) and its own critic review, and nothing is written into a round's folder after its critique. Set the round to 1 and save before the first generation; increment it and save before each batch of revisions, so a resumed session never reuses an earlier round's paths. `screens[].round` counts the user-requested revision rounds of that screen; increment it and save before editing the screen. Whenever a tool call changes a candidate or frame, update its `toolRef` from the result, set its `export` to null and save, then export it again into the current round's folder. Never launch the critic or show a gate while any candidate or frame in the set has `export` null.
 - `approvals`: the four gates.
 - `models`: model per delegated role (`opus`, `sonnet`, `haiku` or `fable`); a missing key means the default above. The router uses the model in its own frontmatter.
 - `legacy`: `null`, or what `scripts/migrate-state.mjs` recorded when it migrated a project from the retired build workflow.
@@ -117,14 +119,14 @@ Pass the role's model from `state.models` as the Agent tool's `model`; fall back
 ## Phase: direction
 Needs `backend.status` `ready`.
 1. Choose the representative screen: the landing page, or the home or entry screen of a multi-screen product. Pick two or three materially different directions from `ux/directions.md` and the references. Show them; do not ask the user to choose before seeing them.
-2. Generate. Budget: one generation and one export per candidate.
+2. Set `direction.round` to 1 and save, then generate. Budget: one generation and one export per candidate.
    - Stitch: `create_project` once (reuse `projectId` when set). Write each prompt from the brief and the direction: product, audience, primary task, real copy from the brief or own site, layout, type, colour, imagery and mood. No framework or code words. Use `deviceType` `DESKTOP` for web and `MOBILE` for mobile. Use one `generate_screen_from_text` per direction, or one screen plus `generate_variants` (`variantCount` 2, `creativeRange` `EXPLORE` or `REIMAGINE`) when the directions share content.
    - Figma: `create_new_file` once (save `fileUrl`), then one frame per direction on a `Directions` page with `use_figma`.
    - When `legacy.recreateBaseline` is true, recreate the accepted visual baseline from `ux/decisions.md` as the single candidate; the screenshots in `legacy.prototypeScreenshots` serve as reference images only. Add alternatives only if the user asks.
-3. Export each candidate to `ux/evidence/direction-<round>/<id>.png`.
-4. Launch `fashion:visual-critic` once for the round (critic model) with the image paths, the brief, the reference notes and the review kind `direction-<round>`. Save its task ID in `critic.taskId`.
+3. Export each candidate to `ux/evidence/direction-<direction.round>/<id>.png` and save the path in its `export`.
+4. Launch `fashion:visual-critic` once for the round (critic model) with the image paths, the brief, the reference notes and the review kind `direction-<direction.round>`. Save its task ID in `critic.taskId` and the kind in `critic.kind`.
 5. Gate 2: in one message show each candidate (export path, tool link or id, one line on its tradeoff), the critic's top findings and your recommendation. The user picks, mixes or asks for changes.
-6. Changes: `edit_screens` (Figma: `use_figma`) on the named candidate with at most three concrete changes per round, export again, and show it. Run the critic again only when the change is broad.
+6. Changes: increment `direction.round` and save, then `edit_screens` (Figma: `use_figma`) on the named candidate with at most three concrete changes; refresh its `toolRef` and export as described under "Rounds and fresh previews", and show it. Run the critic again (review kind `direction-<direction.round>`) only when the change is broad.
 7. On a pick: record the decision, its reason and the rejected options in `ux/decisions.md` and `state.decisions`; set `direction.chosen` and `approvals.direction`.
 8. Design system. Stitch: `create_design_system` from the chosen direction, or `upload_design_md` and `create_design_system_from_design_md` when the project already has a DESIGN.md or dembrandt tokens of the user's own brand; save `designSystemId`. Figma: create variables and components for colour, type, spacing, radius, elevation and the core components with `use_figma`. Write `ux/design-system.md`: tokens, components and where each came from. Set phase `design`.
 
@@ -133,11 +135,11 @@ Needs `backend.status` `ready`.
 2. Generate in batches, one generation per frame (screen, state and form factor):
    - Stitch: `generate_screen_from_text` with the design system, the screen's purpose, real content and, for a state, what differs from the default. Use `apply_design_system` to bring drifted screens back in line.
    - Figma: frames on a `Screens` page built from the library components and variables with `use_figma`.
-   Save each `toolRef`, set the screen `generated`, and export every frame to `ux/evidence/design-<round>/<screen>-<state>-<device>.png`.
-3. Consistency. Compare the exports for tokens, type scale, component shapes, navigation and spacing. Fix drift with `apply_design_system` or `edit_screens` (Figma: `use_figma`). Check text and key UI colour pairs from the design system with dembrandt `check_contrast` (WCAG AA) and note touch-target sizes. These are design checks, not runtime tests.
+   Set `design.round` to 1 and save before the first batch. Save each `toolRef`, set the screen `generated`, and export every frame to `ux/evidence/design-<design.round>/<screen>-<state>-<device>.png`.
+3. Consistency. Compare the exports for tokens, type scale, component shapes, navigation and spacing. Fix drift with `apply_design_system` or `edit_screens` (Figma: `use_figma`), then refresh the `toolRef` and export of every frame a fix changed (see "Rounds and fresh previews"). Check text and key UI colour pairs from the design system with dembrandt `check_contrast` (WCAG AA) and note touch-target sizes. These are design checks, not runtime tests.
 4. Interactions. Write `ux/interactions.md`: per screen, triggers, transitions, motion timing, the reduced-motion alternative, focus order and keyboard behaviour, and error and loading behaviour. Head it "Specification, not run". Figma prototype connections may illustrate it; they are still a specification.
-5. Launch `fashion:visual-critic` once (review kind `design-<round>`) on all exports in journey order.
-6. Gate 3: show the set (links, export paths, the critic's top findings, open questions) and ask for approval or changes. For changes, edit only the named frames, export them again and re-review only those frames. After two edit rounds on one screen, ask whether to accept it or rethink it. On approval set every screen `approved`, set `approvals.screens` and phase `handoff`.
+5. When every frame has a current export, launch `fashion:visual-critic` once (review kind `design-<design.round>`, saved in `critic.kind`) on all exports in journey order.
+6. Gate 3: show the set (links, export paths, the critic's top findings, open questions) and ask for approval or changes. For changes: if a named screen's `round` is already 2, ask whether to accept it or rethink it instead of editing it. Otherwise increment `design.round` and each named screen's `round` and save, edit only the named frames, refresh their `toolRef` and export into the new round's folder, and re-review only those frames (review kind `design-<design.round>`). On approval set every screen `approved`, set `approvals.screens` and phase `handoff`.
 
 ## Phase: handoff
 1. Write `handoff/`, with no code files and no HTML from any tool:
@@ -151,7 +153,7 @@ Needs `backend.status` `ready`.
 If the user then asks for an implementation, say it is outside Fashion and point to the handoff package.
 
 ## Restart
-`/fashion:resume` migrates legacy state with `scripts/migrate-state.mjs`, then continues the current phase from state. Do not repeat an approved gate, relaunch a live agent, or regenerate a frame that has a `toolRef`. Check the backend again before the first design-tool call.
+`/fashion:resume` migrates legacy state with `scripts/migrate-state.mjs`, then continues the current phase from state. Do not repeat an approved gate, relaunch a live agent, or regenerate a frame that has a `toolRef`. Rounds continue from the saved counters: export any candidate or frame whose `export` is null before a critique or gate, and increment the round before any new revision. Check the backend again before the first design-tool call.
 
 ## Git
 Fashion never runs `git init`. In a repository, read-only git is fine; commit `.fashion/`, `research/`, `ux/`, `references/` and `handoff/` only when the user asks.

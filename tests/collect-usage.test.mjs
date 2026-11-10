@@ -178,3 +178,27 @@ test("an unfinished tail stays a warning when every valid record is outside the 
   assert.match(r.warnings[0], /S\.jsonl:2: unfinished final line/);
   assert.equal(r.totalCostUSD, "unknown");
 });
+
+// Pilot finding: interactive runs mark typed turns with origin.kind "human" and
+// answer most questions through AskUserQuestion tool results.
+test("interactive runs: human-origin turns, AskUserQuestion answers and usage-limit pauses", () => {
+  const i = path.join(dir, "interactive");
+  mkdirSync(i);
+  const ask = { type: "assistant", timestamp: "2026-11-10T10:01:00Z", requestId: "i2", message: { model: "claude-opus-5", usage: usage(1, 5),
+    content: [{ type: "tool_use", id: "q1", name: "AskUserQuestion", input: {} }] } };
+  write(path.join(i, "S.jsonl"), [
+    user("2026-11-10T10:00:00Z", "/fashion:start https://example.com", { origin: { kind: "human" } }),
+    assistant("2026-11-10T10:00:30Z", "i1", "claude-opus-5", usage(1, 5)),
+    ask,
+    user("2026-11-10T10:03:00Z", [{ type: "tool_result", tool_use_id: "q1", content: "answered" }]),
+    assistant("2026-11-10T10:03:10Z", "i3", "claude-opus-5", usage(1, 5)),
+    user("2026-11-10T11:03:10Z", "limit reset, continue", { isMeta: true, origin: { kind: "auto-continuation" } }),
+    assistant("2026-11-10T11:03:20Z", "i4", "claude-opus-5", usage(1, 5)),
+    user("2026-11-10T11:04:20Z", "stop, the design is wrong", { origin: { kind: "human" } }),
+    user("2026-11-10T11:04:30Z", "<task-notification>x</task-notification>", { origin: { kind: "task-notification" } }),
+  ]);
+  const r = collect({ project: i, run: "t", transcripts: i });
+  assert.equal(r.questionsAnswered, 1);
+  assert.equal(r.humanWaitMs, 120000 + 60000, "the question (2 min) plus the typed reply (1 min)");
+  assert.equal(r.limitPauseMs, 3600000, "the usage-limit pause is reported apart from human wait");
+});

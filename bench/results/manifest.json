@@ -1,0 +1,266 @@
+{
+  "runs": [
+    {
+      "run": "shoponrunway-1-pilot",
+      "variant": "new",
+      "commit": "3996015ae52c83122d3ec2a0ee5a0122f3c6fe77",
+      "collectedAt": "2026-11-10T11:17:07.143Z",
+      "window": {
+        "since": null,
+        "until": null,
+        "sessions": "2eb2d10d-bd06-4aee-968e-80b52e147ab5"
+      },
+      "start": "2026-11-10T05:37:27.579Z",
+      "end": "2026-11-10T11:12:28.302Z",
+      "wallMs": 20100723,
+      "complete": true,
+      "warnings": [],
+      "humanWaitMs": 3282714,
+      "limitPauseMs": 8473632,
+      "questionsAnswered": 10,
+      "efforts": [
+        "high"
+      ],
+      "models": {
+        "claude-sonnet-5": {
+          "requests": 519,
+          "input": 1038,
+          "cacheWrite5m": 1439913,
+          "cacheWrite1h": 0,
+          "cacheRead": 57870472,
+          "output": 394843,
+          "costUSD": "unknown"
+        },
+        "claude-opus-5": {
+          "requests": 222,
+          "input": 444,
+          "cacheWrite5m": 259944,
+          "cacheWrite1h": 599743,
+          "cacheRead": 39187416,
+          "output": 221986,
+          "costUSD": "unknown"
+        }
+      },
+      "agents": {
+        "fashion:builder": {
+          "runs": 3,
+          "perModel": {
+            "claude-sonnet-5": {
+              "requests": 181,
+              "input": 362,
+              "cacheWrite5m": 501582,
+              "cacheWrite1h": 0,
+              "cacheRead": 20103247,
+              "output": 136274,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:visual-critic": {
+          "runs": 1,
+          "perModel": {
+            "claude-sonnet-5": {
+              "requests": 49,
+              "input": 98,
+              "cacheWrite5m": 115734,
+              "cacheWrite1h": 0,
+              "cacheRead": 4752304,
+              "output": 34457,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:prototyper": {
+          "runs": 2,
+          "perModel": {
+            "claude-sonnet-5": {
+              "requests": 151,
+              "input": 302,
+              "cacheWrite5m": 421274,
+              "cacheWrite1h": 0,
+              "cacheRead": 23359837,
+              "output": 154409,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:merger": {
+          "runs": 2,
+          "perModel": {
+            "claude-sonnet-5": {
+              "requests": 48,
+              "input": 96,
+              "cacheWrite5m": 109903,
+              "cacheWrite1h": 0,
+              "cacheRead": 3160362,
+              "output": 21370,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:checker": {
+          "runs": 3,
+          "perModel": {
+            "claude-sonnet-5": {
+              "requests": 82,
+              "input": 164,
+              "cacheWrite5m": 246409,
+              "cacheWrite1h": 0,
+              "cacheRead": 6060371,
+              "output": 41975,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:competitor-researcher": {
+          "runs": 1,
+          "perModel": {
+            "claude-opus-5": {
+              "requests": 29,
+              "input": 58,
+              "cacheWrite5m": 99540,
+              "cacheWrite1h": 0,
+              "cacheRead": 2062763,
+              "output": 23810,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:ux-analyst": {
+          "runs": 1,
+          "perModel": {
+            "claude-opus-5": {
+              "requests": 28,
+              "input": 56,
+              "cacheWrite5m": 160404,
+              "cacheWrite1h": 0,
+              "cacheRead": 3384095,
+              "output": 40975,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "fashion:watchdog": {
+          "runs": 1,
+          "perModel": {
+            "claude-sonnet-5": {
+              "requests": 8,
+              "input": 16,
+              "cacheWrite5m": 45011,
+              "cacheWrite1h": 0,
+              "cacheRead": 434351,
+              "output": 6358,
+              "costUSD": "unknown"
+            }
+          }
+        },
+        "main": {
+          "runs": 1,
+          "perModel": {
+            "claude-opus-5": {
+              "requests": 165,
+              "input": 330,
+              "cacheWrite5m": 0,
+              "cacheWrite1h": 599743,
+              "cacheRead": 33740558,
+              "output": 157201,
+              "costUSD": "unknown"
+            }
+          }
+        }
+      },
+      "totalCostUSD": "unknown",
+      "lowerBoundCostUSD": null,
+      "pricesFile": null,
+      "tools": {
+        "claude": "2.1.322 (Claude Code)",
+        "node": "v24.3.0"
+      },
+      "inputs": {
+        "_collected.json": "b1bf5906d6d9995b56d4de494e7221288e9edbc98c9dd2176a74b230cfb3871e",
+        "home-desktop.png": "31b9461570f762399c64402bb8977076c03d1eff39e6778d19cb117a700cc37b",
+        "home-mobile.png": "46bd8b74e407a6d0e175724d27ef36b754e637f5fc9a30bd8948b45ed8c3f47b",
+        "home.html": "ecc0550531dbba930026c34282502236cf1b634704e4b79cfe535871a76e76f8",
+        "images/1-static-runway-logo.png": "a0961fa8b647e3593319ffd8266a243b98c4e989411ab5412c0d3aabc5eb2a4d",
+        "images/2026-08-09-43183dc7-0b96-4cd1-800f-b27c72a95769.jpg": "e75ed303d3efeb1acbc790872a6a9d0d957fc7c1267818ba0ddc60ddfd588c04",
+        "images/2026-08-09-e728533e-9b75-4986-8edf-10f145bdaf66.png": "82df9fd3e74c9085eeeddfbaf89b560ab7a67477694bfd656fb03152320524c9",
+        "images/2026-08-14-385e259f-faf5-4345-afd3-8a50f6f84535.jpg": "a0e5f5539797b680b69c2c2abb3f077d6195d9eaaa406bfa7eee42c53663d22f",
+        "images/319679-d3c71e96-bb16-4c1c-978f-33336b24fe1e-Untitled---August-11--2026-at-16.31.45--1-.png": "1cc7e76e69ae39a93ec915ce631c5687ed07027766b727b6b4f2a9db0260ead7",
+        "images/aight-leg-sweatpants-10cc47ecf5c7e99d66444367cb5896e0842560c35da4171a1560f45701285110.webp": "2e22c645d4156065080ac6f556c6a6fcb5a33057a7d1576c920a8ceb01fa376a",
+        "images/aight-leg-sweatpants-76984c8cf4ba263416cb3052bcc5f37b0da19c3f5d6944cd956608ea8a55360b.webp": "18d8310eda4bd078691e9d4ec62a7d92ac2901af7c96c028dadec5859386162f",
+        "images/annequin-6acccaa35f4127e7c8fe47beeb065fa6f788b1ecc049faff01935644487a4fbe-a1945459e3fd.png": "9de0eb81a205baa1f69a8c5867bc556e0ede9e4d6d0b54dcb29bdf82d7b76d0e",
+        "images/annequin-d13089b75f1002eac699a762e00a6b97636fc3b19b5db1b537e4228f7ac77d7b-a59d336cafc8.png": "fb399492e74addaf5a8ef0654930bf327d759d42b1f90e59194da9e7d3213a47",
+        "images/annequin-e6464b0a995b712578d9c09d76d4ab0011c3347e4792e5a9908db973990c590c-9e561508e0a6.png": "42ed457c2dea8f67d53105ead0a522f22b8506a750d0440e855b559fa4afd2ae",
+        "images/home-fw26-kids-8396165-784b85a903f5.jpg": "ee6a2e344256217a40c260f22b48e55e1bb30fe2d27b77eb926ef2a0de2fb8d6",
+        "images/home-fw26-men-16226998-a6b7c6bef526.jpg": "467aaf124d8986d948d6b3b050363ed768a9072664d9bcc7bfc9aee05e115ae1",
+        "images/home-fw26-women-20837207-8b029e268137.jpg": "baf1996ac433f48de2e37fc25dc80f1860607a9ff9f25ee54df8891b768df483",
+        "images/home-show-never-ends.png": "1fed11381a814143fabcbeea350e74b05512b7a17b725d8b481c80784158813a",
+        "images/home-untitled-design-45.png": "0a83be857575701c6187ea81c9eb87c52b2ee808e5d6f7d8644a83accd8ffca3",
+        "images/ized-T-shirt-in-aqua-8fe2fdc320c3a708a458def9204e138d8fd87aa8477107bf0757e422c0da7b10.webp": "cd675522b61ab24b16184223e11ff40630e41dd80620e7225f1587abeb15a757",
+        "images/ized-T-shirt-in-aqua-ba5c781e7d06b112253a699462f32cbda01ef128cd3e20bc556a1db86a1e681d.webp": "cc29de0919b8bc89186cab4cb686c2a8b9cfb77def9ad6eddc1cc04c59492f99",
+        "images/p1-44v-novar-tie-lace-blouse-butter-yellow-1.jpg": "200fb5873176449a9cfde27054340115ecf9c2737d6d99ec514161b6637d8273",
+        "images/p1-8mj-galiente-oversized-crepe-shirt-black-black-2.png": "94502a04ae8c23b737d6bd218963838aa31f29c35b46a606a79a8560bef6e142",
+        "images/p1-ij8-rae-bloom-top-brown-1.jpg": "c8d65851b98c88e73c8b76345dbea8a9c55945bfc599fb1d6ba7cd224bb6e8c6",
+        "images/p1-sou-rae-prairie-blouse-off-white-1.jpg": "0c54c62603acc653f644ed800e013fef1f4cde160715d9728e2baaba9382b724",
+        "images/p1-sou-rae-prairie-blouse-off-white-2.jpg": "d739817cba8df3b3b5abf2ef4153a705d7ed375599d48fe0eb23bdcb29e760e3",
+        "images/p1-vg3-love-coara-peekaboo-shorts-white-1.jpg": "f568de727355c17a0aeec5d28d7fe6aead44247c017138f18456f4bad1958e73",
+        "images/p1-vg3-love-coara-peekaboo-shorts-white-2.jpg": "5b364a0de849fa1c78afa9700cbb10bd2e40121ea50f23d096e7325c1d2d0e63",
+        "images/p2-h0j-rae-verdant-kimono-green-1.jpg": "8ddf52ac84ceb6a4ddf51ca8cb6e72559ce3e6c03e4e85f00ebdb86552381687",
+        "images/rwid_product_218154f6516d74e063f3-rwid_media_54a34f206057c3c7b07e.jpg": "88909a79a5581548a174b7bc695d99142d4851b8507440397fc46855c8e22722",
+        "images/rwid_product_218154f6516d74e063f3-rwid_media_f1e09a1d551ac39a39c9.jpg": "5a2ddc0cb8499a2542841b2fa49493bea48f0f4c2a155fc3351d09c8dfe10127",
+        "images/rwid_product_43de0e7d87010c622b8e-rwid_media_dd39f6552f01e4f8ed96.jpg": "f8dbc4d736ae12984468899a193d7966a2cbe523d848165e79cda1c0fe667d44",
+        "images/rwid_product_69ad4508d1be2ec6824a-rwid_media_76fe8a9b16bcf40ae2b8.jpg": "f3c26bd5bab7a084f2b28295d42e6e77b6be5206e9fbf594725c0a2205f20c7e",
+        "images/rwid_product_863bbca7e67fb05e2b6e-rwid_media_551fc0901cb3764ce592.jpg": "26587ca6d4a8e7ab0bcea98d8ec7e3c16ec32fe40f379b8608e5b7fdf831ed57",
+        "images/rwid_product_863bbca7e67fb05e2b6e-rwid_media_7f0f9645e8d1fd339d34.jpg": "6cab02fe9491f9f614e4c1e52cdfce3dd57fbb2e5d35b0000e32352837d2a0c7",
+        "images/rwid_product_8640c0e859e122c260c4-rwid_media_1256d5302b96fc40021f.jpg": "c21c3cf7bd2b59288a67a51a28da7034d177571894f535075dca3b350c86cde2",
+        "images/rwid_product_8640c0e859e122c260c4-rwid_media_1e9311b4f1cd007eb485.jpg": "76100fd8b6c9d731acddbfcea0683689934f96affaed015512d93b72644eb907",
+        "images/rwid_product_ca5931a41c2522690060-rwid_media_69019565837aa6dcbb1e.jpg": "233e612ddfcf9d982358332d45eefd52d82271a9380d094d3d11ac19ce318b57",
+        "images/rwid_product_ca5931a41c2522690060-rwid_media_887d777f66760b59453b.jpg": "0ff4332b679b1c3fd3dc7dd823327421ee7f6033ed6b6b223fbe661c296b2cdd",
+        "images/rwid_product_da04ebb38b355a946a09-rwid_media_0606361ceedab008b3bf.jpg": "f0c91a9279c7403e671e98044a259c048003d61cf5368f277a86f3370cddb810",
+        "images/rwid_product_da04ebb38b355a946a09-rwid_media_75aa6abc04b07f866a78.jpg": "c1d098d670b7a1e5c865e6ba94fd3a27d6bd1bef10555820deb6f099b036c4c5",
+        "images/rwid_product_f66cd3048a79cca2d7a2-rwid_media_35a47d5a6e4f37528238.jpg": "24535b202416307bd28f861faceb7f047eab6c810615cee4c2dd17d18b6dc1cc",
+        "images/rwid_product_f66cd3048a79cca2d7a2-rwid_media_5ed4b4c55ae8a3ca29c4.jpg": "93113943cc0e4bb0fe84c990dde96592ca2ede5830aabc0ca8061acca96e05bd",
+        "images/static-runway-logo.png": "70c4bdee0f7992ca1216bfe9f4669a103ee5b20a1091977fabb0b59a0c7c2223",
+        "images/v120675951816ea09-app-store-badge.svg": "fddbc218723011e478c5f0f60e8f31291c5a855be4f218aa93931909069267ba",
+        "images/v120675951816ea09-google-play-badge.svg": "e82b3389d6d6a15bde204aeb3fe4f27f37884fc63e5738e0d597c941a6000ed1",
+        "sources.md": "dabaed86a115b437b128b826b08a1b8bed4191c9232f450beb762590db761f59"
+      },
+      "transcripts": [
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a0a24b5f95891237b.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a1723c65fa26c62c4.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a18ea5fd87c8a8eec.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a229689f2d46ec07e.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a4dcfdfddb547e6b1.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a4de1773b67fb9f4d.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a6a1776322f3ab0ea.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-a8a01ca4b4ae79df8.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-aa1ca63206a992018.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-aae2ee65a6fe96ef8.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-acab0b6ad10468e38.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-ad62a3d403a4ca0bd.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-ad76e13c70f6a10a2.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5/subagents/agent-ad9fcfd06287356a8.jsonl",
+        "/Users/hab/.claude/projects/-Users-hab-Development-projects-pilots-shoponrunway-1/2eb2d10d-bd06-4aee-968e-80b52e147ab5.jsonl"
+      ],
+      "outcome": "stopped: owner rejected the design at first sight (11:11Z), mid phase 4 on the home screen; approvals had been given without seeing any render",
+      "revisions": {
+        "prototypeRounds": 2,
+        "criticReviews": 1
+      },
+      "failures": [
+        "approvals given from text only (ASCII previews, measurements); renders never shown before 11:10",
+        "visual critic measured but gave no aesthetic verdict; converged baseline not critiqued",
+        "builder wrote heartbeat/result into worktree copy of tickets/",
+        "usage limit paused the run 2.35 h"
+      ],
+      "evidence": {
+        "checklist": "bench/results/shoponrunway-1-pilot/checklist.md",
+        "brief": "bench/briefs/shoponrunway-1/brief.md",
+        "ownSiteSources": "bench/briefs/shoponrunway-1/own-site-sources.md",
+        "ownSiteHashes": "bench/briefs/shoponrunway-1/own-site.sha256",
+        "session": "2eb2d10d-bd06-4aee-968e-80b52e147ab5"
+      },
+      "collections": 2
+    }
+  ]
+}
